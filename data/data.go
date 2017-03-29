@@ -7,8 +7,7 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-// ShakeToScalar hashes a byte array into a scalar using SHAKE
-func ShakeToScalar(in []byte) ed448.Scalar {
+func shakeToScalar(in []byte) ed448.Scalar {
 	hash := make([]byte, 56)
 	sha3.ShakeSum256(hash, in)
 	s := ed448.NewScalar(hash)
@@ -17,7 +16,7 @@ func ShakeToScalar(in []byte) ed448.Scalar {
 
 // AppendAndHash appends and hash bytes arrays
 func AppendAndHash(bs ...interface{}) ed448.Scalar {
-	return ShakeToScalar(AppendBytes(bs...))
+	return shakeToScalar(AppendBytes(bs...))
 }
 
 // AppendBytes appends bytes
