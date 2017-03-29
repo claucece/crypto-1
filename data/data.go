@@ -2,38 +2,65 @@ package data
 
 import (
 	"errors"
-	"io"
 
 	"github.com/twstrike/ed448"
 	"golang.org/x/crypto/sha3"
 )
 
-// RandScalar return a random scalar
-func RandScalar(rand io.Reader) (ed448.Scalar, error) {
-	var b [fieldBytes]byte
-
-	_, err := io.ReadFull(rand, b[:])
-	if err != nil {
-		return nil, errors.New("cannot source enough entropy")
-	}
-
-	return ed448.NewScalar(b[:]), nil
+// ShakeToScalar hashes a byte array into a scalar using SHAKE
+func ShakeToScalar(in []byte) ed448.Scalar {
+	hash := make([]byte, 56)
+	sha3.ShakeSum256(hash, in)
+	s := ed448.NewScalar(hash)
+	return s
 }
 
-// RandLongTermScalar returna a longterm scalar
-func RandLongTermScalar(rand io.Reader) (ed448.Scalar, error) {
-	var b [fieldBytes]byte
-	var out [fieldBytes]byte
+// AppendAndHash appends and hash bytes arrays
+func AppendAndHash(bs ...interface{}) ed448.Scalar {
+	return ShakeToScalar(AppendBytes(bs...))
+}
 
-	_, err := io.ReadFull(rand, b[:])
-	if err != nil {
-		return nil, errors.New("cannot source enough entropy")
+// AppendBytes appends bytes
+func AppendBytes(bs ...interface{}) []byte {
+	var b []byte
+
+	if len(bs) < 2 {
+		panic("programmer error: missing append arguments")
 	}
 
-	hash := sha3.NewShake256()
-	hash.Write(b[:])
-	hash.Write([]byte("cramershoup_secret"))
-	hash.Read(out[:])
+	for _, e := range bs {
+		switch i := e.(type) {
+		case ed448.Point:
+			b = append(b, i.Encode()...)
+		case ed448.Scalar:
+			b = append(b, i.Encode()...)
+		case []byte:
+			b = append(b, i...)
+		default:
+			panic("programmer error: invalid input")
+		}
+	}
+	return b
+}
 
-	return ed448.NewScalar(out[:]), nil
+// AppendPoint appends a point to a byte array
+func AppendPoint(b []byte, p ed448.Point) []byte {
+	return append(b, p.Encode()...)
+}
+
+// ExtractPoint extracts a point from a byte array
+func ExtractPoint(b []byte, cursor int) (ed448.Point, int, error) {
+	if len(b) < 56 {
+		return nil, 0, errors.New("invalid length")
+	}
+
+	p := ed448.NewPointFromBytes()
+	valid, err := p.Decode(b[cursor:cursor+56], false)
+	if !valid {
+		return nil, 0, err
+	}
+
+	cursor += 56
+
+	return p, cursor, err
 }
