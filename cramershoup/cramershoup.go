@@ -6,7 +6,7 @@ import (
 
 	"github.com/twstrike/ed448"
 	// XXX: find a way to do this
-	. "github.com/twtiger/crypto/data"
+	. "github.com/twtiger/crypto/utils"
 )
 
 // XXX: serialize as MPI
