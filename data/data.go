@@ -8,7 +8,7 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-// RandScalar bla
+// RandScalar return a random scalar
 func RandScalar(rand io.Reader) (ed448.Scalar, error) {
 	var b [fieldBytes]byte
 
@@ -20,7 +20,7 @@ func RandScalar(rand io.Reader) (ed448.Scalar, error) {
 	return ed448.NewScalar(b[:]), nil
 }
 
-// RandLongTermScalar bla
+// RandLongTermScalar returna a longterm scalar
 func RandLongTermScalar(rand io.Reader) (ed448.Scalar, error) {
 	var b [fieldBytes]byte
 	var out [fieldBytes]byte
