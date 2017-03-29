@@ -3,11 +3,12 @@ package cramershoup
 import (
 	"crypto/rand"
 	"encoding/hex"
-	"io"
 	"testing"
 
 	"github.com/twstrike/ed448"
 	. "gopkg.in/check.v1"
+
+	. "github.com/twtiger/crypto/utils"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -15,24 +16,6 @@ func Test(t *testing.T) { TestingT(t) }
 type CSSuite struct{}
 
 var _ = Suite(&CSSuite{})
-
-type fixedRandReader struct {
-	data []byte
-	at   int
-}
-
-func fixedRand(data []byte) io.Reader {
-	return &fixedRandReader{data, 0}
-}
-
-func (r *fixedRandReader) Read(p []byte) (n int, err error) {
-	if r.at < len(r.data) {
-		n = copy(p, r.data[r.at:])
-		r.at += 56
-		return
-	}
-	return 0, io.ErrUnexpectedEOF
-}
 
 var (
 	csRandData = []byte{
@@ -246,12 +229,12 @@ func (s *CSSuite) Test_DerivePrivateKey(c *C) {
 			0x6f, 0xe8, 0x4e, 0x81, 0x49, 0x31, 0xfe, 0x3b,
 		}),
 	}
-	priv, err := deriveCramerShoupPrivKey(fixedRand(csRandData))
+	priv, err := deriveCramerShoupPrivKey(FixedRand(csRandData))
 	c.Assert(priv, DeepEquals, expPriv)
 	c.Assert(err, IsNil)
 
 	r := make([]byte, 55)
-	_, err = deriveCramerShoupPrivKey(fixedRand(r))
+	_, err = deriveCramerShoupPrivKey(FixedRand(r))
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
@@ -394,7 +377,7 @@ func (s *CSSuite) Test_CramerShoupKeyDerivation(c *C) {
 		}),
 	}
 
-	keyPair, err := deriveCramerShoupKeys(fixedRand(csRandData))
+	keyPair, err := deriveCramerShoupKeys(FixedRand(csRandData))
 	c.Assert(expPub.c, DeepEquals, keyPair.pub.c)
 	c.Assert(expPub.d, DeepEquals, keyPair.pub.d)
 	c.Assert(expPub.h, DeepEquals, keyPair.pub.h)
@@ -406,7 +389,7 @@ func (s *CSSuite) Test_CramerShoupKeyDerivation(c *C) {
 	c.Assert(expPriv.y2, DeepEquals, keyPair.priv.y2)
 	c.Assert(expPriv.z, DeepEquals, keyPair.priv.z)
 
-	keyPair, err = deriveCramerShoupKeys(fixedRand([]byte{0x00}))
+	keyPair, err = deriveCramerShoupKeys(FixedRand([]byte{0x00}))
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 	c.Assert(keyPair, IsNil)
@@ -629,11 +612,11 @@ func (s *CSSuite) Test_CramerShoupEncryption(c *C) {
 	}
 
 	csm := &cramerShoupMessage{}
-	err := csm.cramerShoupEnc(message, fixedRand(randData), pub)
+	err := csm.cramerShoupEnc(message, FixedRand(randData), pub)
 	c.Assert(csm, DeepEquals, expCSM)
 	c.Assert(err, IsNil)
 
-	err = csm.cramerShoupEnc(message, fixedRand([]byte{0x00}), pub)
+	err = csm.cramerShoupEnc(message, FixedRand([]byte{0x00}), pub)
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
 
