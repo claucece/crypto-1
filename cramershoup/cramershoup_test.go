@@ -612,10 +612,12 @@ func (s *CSSuite) Test_Encryption(c *C) {
 	}
 
 	csm, err := Encrypt(message, FixedRand(randData), pub)
+
 	c.Assert(csm, DeepEquals, expCSM)
 	c.Assert(err, IsNil)
 
 	csm, err = Encrypt(message, FixedRand([]byte{0x00}), pub)
+
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
 
@@ -800,9 +802,7 @@ func (s *CSSuite) Test_EncryptAndDecrypt(c *C) {
 	}
 
 	keyPair, err := GenerateKeys(rand.Reader)
-
 	csm, err := Encrypt(message, rand.Reader, keyPair.pub)
-
 	expMessage, err := Decrypt(keyPair.priv, csm)
 
 	c.Assert(expMessage, DeepEquals, message)

@@ -110,8 +110,9 @@ func Decrypt(priv *PrivateKey, csm *CSMessage) (message []byte, err error) {
 	b := ed448.PointDoubleScalarMul(csm.u1, csm.u2, priv.y1, priv.y2)
 	v0 := ed448.PointScalarMul(b, alpha)
 	v0.Add(a, v0)
-	valid := v0.Equals(csm.v)
-	if !valid {
+
+	ok := v0.Equals(csm.v)
+	if !ok {
 		return nil, errors.New("cannot decrypt the message")
 	}
 
