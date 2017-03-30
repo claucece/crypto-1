@@ -7,7 +7,7 @@ import (
 	. "gopkg.in/check.v1"
 
 	"github.com/twstrike/ed448"
-	. "github.com/twtiger/crypto/utils"
+	"github.com/twtiger/crypto/utils"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -27,10 +27,8 @@ var (
 		0xe7, 0xba, 0xfc, 0x25, 0x99, 0x99, 0xb8, 0xc3,
 		0x90, 0x3e, 0xf4, 0xa3, 0x75, 0xee, 0x85, 0x32,
 	}
-)
 
-func (s *EGSuite) Test_DerivePrivateKey(c *C) {
-	expPriv := &PrivateKey{
+	testPriv = &PrivateKey{
 		// X
 		ed448.NewScalar([]byte{
 			0xc6, 0xd0, 0x98, 0x2e, 0xe4, 0xe5, 0x81, 0xe4,
@@ -40,15 +38,65 @@ func (s *EGSuite) Test_DerivePrivateKey(c *C) {
 			0x8c, 0x62, 0xe1, 0x86, 0xb7, 0xef, 0xd6, 0xcb,
 			0x1b, 0x14, 0x88, 0x3b, 0xc0, 0xfb, 0xac, 0x46,
 			0x0c, 0xc7, 0x20, 0x82, 0x3e, 0xd0, 0xdc, 0x2c,
-		}),
+		},
+		),
 	}
 
-	priv, err := derivePrivKey(FixedRand(egRandData))
-	c.Assert(priv, DeepEquals, expPriv)
+	testPub = &PublicKey{
+		// G
+		ed448.NewPointFromBytes(),
+		// Q
+		ed448.NewScalar(),
+		// Y
+		ed448.NewPoint(
+			[16]uint32{
+				0x0ccd1054, 0x0dd85c70, 0x095dc098, 0x005fdf78,
+				0x0f6d2050, 0x064a76af, 0x08363bce, 0x014325f1,
+				0x0574263a, 0x04c5b6be, 0x01774dc9, 0x0d2102d1,
+				0x031d3ab4, 0x0f255544, 0x0eec4139, 0x01a69a40,
+			},
+			[16]uint32{
+				0x08c35ab3, 0x02edc945, 0x0d60b971, 0x0ccb4b14,
+				0x08a6c14d, 0x0f4dcafc, 0x07bf5b20, 0x0fcacf39,
+				0x0b8bd792, 0x0f092fae, 0x05b99a1a, 0x0163bd6e,
+				0x0275ef84, 0x0b2099af, 0x01c21cf4, 0x0e899e8f,
+			},
+			[16]uint32{
+				0x01e21a42, 0x0e282ee6, 0x01461de1, 0x09e55da9,
+				0x0ad9b37b, 0x0e196475, 0x0f5107e1, 0x05e71693,
+				0x0abf627f, 0x07726e64, 0x07b2e3b6, 0x0831b5f0,
+				0x09af28b3, 0x0b30120d, 0x05c4cc70, 0x0bce3ad4,
+			},
+			[16]uint32{
+				0x07da6911, 0x0260b301, 0x09b58d5f, 0x05891723,
+				0x06d85cdd, 0x0ca5e904, 0x0d39cf35, 0x0b81a57b,
+				0x0d1f56d4, 0x09b4efc3, 0x0ad08b05, 0x0edb9f3d,
+				0x0b4107cd, 0x081b9d45, 0x030b4941, 0x0bdd68bc,
+			},
+		),
+	}
+)
+
+func (s *EGSuite) Test_DerivePrivateKey(c *C) {
+	priv, err := derivePrivKey(utils.FixedRand(egRandData))
+
+	c.Assert(priv, DeepEquals, testPriv)
 	c.Assert(err, IsNil)
 
 	r := make([]byte, 55)
-	_, err = derivePrivKey(FixedRand(r))
+	_, err = derivePrivKey(utils.FixedRand(r))
+
+	c.Assert(err, ErrorMatches, "cannot source enough entropy")
+}
+
+func (s *EGSuite) Test_GenerateKeys(c *C) {
+	pair, err := GenerateKeys(utils.FixedRand(egRandData))
+	c.Assert(pair.Pub.Y, DeepEquals, testPub.Y)
+	c.Assert(pair.Priv, DeepEquals, testPriv)
+	c.Assert(err, IsNil)
+
+	r := make([]byte, 55)
+	_, err = GenerateKeys(utils.FixedRand(r))
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
@@ -66,9 +114,14 @@ func (s *EGSuite) Test_EncryptionAndDecryption(c *C) {
 
 	keyPair, err := GenerateKeys(rand.Reader)
 	c1, c2, err := Encrypt(rand.Reader, keyPair.Pub, message)
-
 	expMessage := Decrypt(keyPair.Priv, c1, c2)
 
 	c.Assert(expMessage, DeepEquals, message)
 	c.Assert(err, IsNil)
+
+	keyPair, err = GenerateKeys(rand.Reader)
+	c1, c2, err = Encrypt(utils.FixedRand([]byte{0x00}), keyPair.Pub, message)
+
+	c.Assert(expMessage, DeepEquals, message)
+	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
