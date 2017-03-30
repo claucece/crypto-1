@@ -61,7 +61,7 @@ var (
 		0x39, 0xe1, 0x6f, 0x8c, 0x89, 0xed, 0xf6, 0x11,
 	}
 
-	testPubA = &cramerShoupPublicKey{
+	testPubA = &PublicKey{
 		// c
 		ed448.NewPoint(
 			[16]uint32{
@@ -177,7 +177,7 @@ func hexToBytes(s string) []byte {
 }
 
 func (s *CSSuite) Test_DerivePrivateKey(c *C) {
-	expPriv := &cramerShoupPrivateKey{
+	expPriv := &PrivateKey{
 		// x1
 		ed448.NewScalar([]byte{
 			0xc6, 0xd0, 0x98, 0x2e, 0xe4, 0xe5, 0x81, 0xe4,
@@ -229,18 +229,18 @@ func (s *CSSuite) Test_DerivePrivateKey(c *C) {
 			0x6f, 0xe8, 0x4e, 0x81, 0x49, 0x31, 0xfe, 0x3b,
 		}),
 	}
-	priv, err := deriveCramerShoupPrivKey(FixedRand(csRandData))
+	priv, err := derivePrivKey(FixedRand(csRandData))
 	c.Assert(priv, DeepEquals, expPriv)
 	c.Assert(err, IsNil)
 
 	r := make([]byte, 55)
-	_, err = deriveCramerShoupPrivKey(FixedRand(r))
+	_, err = GenerateKeys(FixedRand(r))
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
 
-func (s *CSSuite) Test_CramerShoupKeyDerivation(c *C) {
-	expPub := &cramerShoupPublicKey{
+func (s *CSSuite) Test_KeyGeneration(c *C) {
+	expPub := &PublicKey{
 		// c
 		ed448.NewPoint(
 			[16]uint32{
@@ -324,7 +324,7 @@ func (s *CSSuite) Test_CramerShoupKeyDerivation(c *C) {
 		),
 	}
 
-	expPriv := &cramerShoupPrivateKey{
+	expPriv := &PrivateKey{
 		// x1
 		ed448.NewScalar([]byte{
 			0xc6, 0xd0, 0x98, 0x2e, 0xe4, 0xe5, 0x81, 0xe4,
@@ -377,7 +377,7 @@ func (s *CSSuite) Test_CramerShoupKeyDerivation(c *C) {
 		}),
 	}
 
-	keyPair, err := deriveCramerShoupKeys(FixedRand(csRandData))
+	keyPair, err := GenerateKeys(FixedRand(csRandData))
 	c.Assert(expPub.c, DeepEquals, keyPair.pub.c)
 	c.Assert(expPub.d, DeepEquals, keyPair.pub.d)
 	c.Assert(expPub.h, DeepEquals, keyPair.pub.h)
@@ -389,13 +389,13 @@ func (s *CSSuite) Test_CramerShoupKeyDerivation(c *C) {
 	c.Assert(expPriv.y2, DeepEquals, keyPair.priv.y2)
 	c.Assert(expPriv.z, DeepEquals, keyPair.priv.z)
 
-	keyPair, err = deriveCramerShoupKeys(FixedRand([]byte{0x00}))
+	keyPair, err = GenerateKeys(FixedRand([]byte{0x00}))
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 	c.Assert(keyPair, IsNil)
 }
 
-func (s *CSSuite) Test_CramerShoupEncryption(c *C) {
+func (s *CSSuite) Test_Encryption(c *C) {
 	randData := []byte{
 		0xd5, 0xde, 0xed, 0x1a, 0xef, 0x64, 0xee, 0x90,
 		0xab, 0xae, 0xbd, 0x66, 0xda, 0xe9, 0x9b, 0xe0,
@@ -416,7 +416,7 @@ func (s *CSSuite) Test_CramerShoupEncryption(c *C) {
 		0x63, 0x8c, 0x62, 0x26, 0x9e, 0x17, 0x5d, 0x22,
 	}
 
-	pub := &cramerShoupPublicKey{
+	pub := &PublicKey{
 		// c
 		ed448.NewPoint(
 			[16]uint32{
@@ -500,7 +500,7 @@ func (s *CSSuite) Test_CramerShoupEncryption(c *C) {
 		),
 	}
 
-	expCSM := &cramerShoupMessage{
+	expCSM := &CSMessage{
 		// u1
 		ed448.NewPoint(
 			[16]uint32{
@@ -611,17 +611,16 @@ func (s *CSSuite) Test_CramerShoupEncryption(c *C) {
 		),
 	}
 
-	csm := &cramerShoupMessage{}
-	err := csm.cramerShoupEnc(message, FixedRand(randData), pub)
+	csm, err := Encrypt(message, FixedRand(randData), pub)
 	c.Assert(csm, DeepEquals, expCSM)
 	c.Assert(err, IsNil)
 
-	err = csm.cramerShoupEnc(message, FixedRand([]byte{0x00}), pub)
+	csm, err = Encrypt(message, FixedRand([]byte{0x00}), pub)
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
 
-func (s *CSSuite) Test_CramerShoupDecryption(c *C) {
-	cipher := &cramerShoupMessage{
+func (s *CSSuite) Test_Decryption(c *C) {
+	cipher := &CSMessage{
 		// u1
 		ed448.NewPoint(
 			[16]uint32{
@@ -732,7 +731,7 @@ func (s *CSSuite) Test_CramerShoupDecryption(c *C) {
 		),
 	}
 
-	priv := &cramerShoupPrivateKey{
+	priv := &PrivateKey{
 		// x1
 		ed448.NewScalar([]byte{
 			0xc1, 0xd9, 0xe2, 0xfb, 0xb1, 0x30, 0x6d, 0x08,
@@ -785,11 +784,11 @@ func (s *CSSuite) Test_CramerShoupDecryption(c *C) {
 		}),
 	}
 
-	_, err := cipher.cramerShoupDec(priv)
+	_, err := Decrypt(priv, cipher)
 	c.Assert(err, ErrorMatches, "cannot decrypt the message")
 }
 
-func (s *CSSuite) Test_CramerShoupEncryptAndDecrypt(c *C) {
+func (s *CSSuite) Test_EncryptAndDecrypt(c *C) {
 	message := []byte{
 		0xfd, 0xf1, 0x18, 0xbf, 0x8e, 0xc9, 0x64, 0xc7,
 		0x94, 0x46, 0x49, 0xda, 0xcd, 0xac, 0x2c, 0xff,
@@ -800,31 +799,30 @@ func (s *CSSuite) Test_CramerShoupEncryptAndDecrypt(c *C) {
 		0x63, 0x8c, 0x62, 0x26, 0x9e, 0x17, 0x5d, 0x22,
 	}
 
-	keyPair, err := deriveCramerShoupKeys(rand.Reader)
+	keyPair, err := GenerateKeys(rand.Reader)
 
-	csm := &cramerShoupMessage{}
-	err = csm.cramerShoupEnc(message, rand.Reader, keyPair.pub)
+	csm, err := Encrypt(message, rand.Reader, keyPair.pub)
 
-	expMessage, err := csm.cramerShoupDec(keyPair.priv)
+	expMessage, err := Decrypt(keyPair.priv, csm)
 
 	c.Assert(expMessage, DeepEquals, message)
 	c.Assert(err, IsNil)
 }
 
-func (s *CSSuite) Test_SerializeCSPubKey(c *C) {
+func (s *CSSuite) Test_SerializePubKey(c *C) {
 	ser := testPubA.serialize()
 
 	c.Assert(ser, DeepEquals, serPubA)
 	c.Assert(ser, HasLen, 170)
 
-	testPub := &cramerShoupPublicKey{}
+	testPub := &PublicKey{}
 	ser = testPub.serialize()
 	var exp1 []byte
 
 	c.Assert(ser, DeepEquals, exp1)
 }
 
-func (s *CSSuite) Test_DeserializeCSPubKeyBytes(c *C) {
+func (s *CSSuite) Test_DeserializePubKeyBytes(c *C) {
 	pub, err := deserialize(serPubA)
 
 	// XXX: implement a pubKey equals
