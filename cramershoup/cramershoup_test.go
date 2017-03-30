@@ -808,35 +808,3 @@ func (s *CSSuite) Test_EncryptAndDecrypt(c *C) {
 	c.Assert(expMessage, DeepEquals, message)
 	c.Assert(err, IsNil)
 }
-
-func (s *CSSuite) Test_SerializePubKey(c *C) {
-	ser := testPubA.serialize()
-
-	c.Assert(ser, DeepEquals, serPubA)
-	c.Assert(ser, HasLen, 170)
-
-	testPub := &PublicKey{}
-	ser = testPub.serialize()
-	var exp1 []byte
-
-	c.Assert(ser, DeepEquals, exp1)
-}
-
-func (s *CSSuite) Test_DeserializePubKeyBytes(c *C) {
-	pub, err := deserialize(serPubA)
-
-	// XXX: implement a pubKey equals
-	pubC := pub.c.Equals(testPubA.c)
-	pubD := pub.d.Equals(testPubA.d)
-	pubH := pub.h.Equals(testPubA.h)
-
-	c.Assert(pubC, DeepEquals, true)
-	c.Assert(pubD, DeepEquals, true)
-	c.Assert(pubH, DeepEquals, true)
-	c.Assert(err, IsNil)
-
-	ser := []byte{0x00}
-	pub, err = deserialize(ser)
-
-	c.Assert(err, ErrorMatches, "invalid length")
-}

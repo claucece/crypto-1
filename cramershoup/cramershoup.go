@@ -122,36 +122,3 @@ func Decrypt(priv *PrivateKey, csm *CSMessage) (message []byte, err error) {
 
 	return
 }
-
-var csPubKeyType = []byte{0x00, 0x10}
-var csPubKeyTypeValue = uint16(0x0010)
-
-func (pub *PublicKey) serialize() []byte {
-	if pub.c == nil || pub.d == nil || pub.h == nil {
-		return nil
-	}
-
-	// XXX: do a serialize int instead?
-	rslt := csPubKeyType
-	rslt = utils.AppendPoint(rslt, pub.c)
-	rslt = utils.AppendPoint(rslt, pub.d)
-	rslt = utils.AppendPoint(rslt, pub.h)
-	return rslt
-}
-
-func deserialize(ser []byte) (*PublicKey, error) {
-	if len(ser) < 58 {
-		return nil, errors.New("invalid length")
-	}
-
-	var err1, err2, err3 error
-	cursor := 2
-
-	c, cursor, err1 := utils.ExtractPoint(ser, cursor)
-	d, cursor, err2 := utils.ExtractPoint(ser, cursor)
-	h, cursor, err3 := utils.ExtractPoint(ser, cursor)
-
-	pub := &PublicKey{c, d, h}
-
-	return pub, utils.FirstError(err1, err2, err3)
-}
