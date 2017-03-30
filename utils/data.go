@@ -1,8 +1,6 @@
 package utils
 
 import (
-	"errors"
-
 	"github.com/twstrike/ed448"
 	"golang.org/x/crypto/sha3"
 )
@@ -40,26 +38,4 @@ func AppendBytes(bs ...interface{}) []byte {
 // AppendAndHash appends and hash bytes arrays
 func AppendAndHash(bs ...interface{}) ed448.Scalar {
 	return shakeToScalar(AppendBytes(bs...))
-}
-
-// AppendPoint appends a point to a byte array
-func AppendPoint(b []byte, p ed448.Point) []byte {
-	return append(b, p.Encode()...)
-}
-
-// ExtractPoint extracts a point from a byte array
-func ExtractPoint(b []byte, cursor int) (ed448.Point, int, error) {
-	if len(b) < 56 {
-		return nil, 0, errors.New("invalid length")
-	}
-
-	p := ed448.NewPointFromBytes()
-	valid, err := p.Decode(b[cursor:cursor+56], false)
-	if !valid {
-		return nil, 0, err
-	}
-
-	cursor += 56
-
-	return p, cursor, err
 }

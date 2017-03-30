@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"encoding/hex"
 	"testing"
 
 	"github.com/twstrike/ed448"
@@ -126,99 +125,4 @@ func (s *UtilsSuite) Test_AppendAndHash(c *C) {
 	})
 
 	c.Assert(hash, DeepEquals, exp)
-}
-
-func (s *UtilsSuite) Test_AppendPoint(c *C) {
-	bs := []byte{}
-	p := ed448.NewPoint(
-		[16]uint32{
-			0x0d9a309b, 0x000289cb, 0x02d19f65, 0x0b622ac4,
-			0x05e6807f, 0x0a08b7f8, 0x0a2a124a, 0x00be3938,
-			0x08475ec5, 0x00682935, 0x0ab32a89, 0x08377f34,
-			0x075f359d, 0x0f12f2dc, 0x08d30bbc, 0x04c9b187,
-		},
-		[16]uint32{
-			0x0627d6a6, 0x0d4bd92c, 0x0a91b860, 0x0209d8f9,
-			0x0acef183, 0x038a181b, 0x01a80ca4, 0x036550a0,
-			0x0810b32f, 0x0697d168, 0x01832b57, 0x0a92e97a,
-			0x0c59385b, 0x085ebf7e, 0x035e4c9b, 0x01d4a5ce,
-		},
-		[16]uint32{
-			0x02c059ed, 0x0a48a55e, 0x0c8728bd, 0x09bf85c1,
-			0x0d10487f, 0x0dad01c8, 0x0ec8b362, 0x067d381b,
-			0x0bd55d03, 0x0fa6172f, 0x0da14dd1, 0x00bd1e8d,
-			0x0d7d1137, 0x073a3e0c, 0x0418d0cb, 0x0eaeb008,
-		},
-		[16]uint32{
-			0x0ce390f7, 0x00deca5e, 0x02f49eb1, 0x0f1bdd2b,
-			0x0440bb6a, 0x04a99c96, 0x086d3a76, 0x035d2358,
-			0x0f89d14b, 0x0ccb0445, 0x0dfbf181, 0x05c26d7b,
-			0x09185fba, 0x0dc1a6e0, 0x04f24b49, 0x0b419134,
-		},
-	)
-
-	prev, _ := hex.DecodeString("e4b2a1a14395b5eb3a5c3f3d265782efc28b9a" +
-		"94cc1d46fff8725079cee988d0955a3da9a2ef30abc30ef1bd947f48e0" +
-		"93aad8405db1d268")
-
-	c.Assert(AppendPoint(bs, p), DeepEquals, prev)
-
-	exp, _ := hex.DecodeString("e4b2a1a14395b5eb3a5c3f3d265782efc28b9a" +
-		"94cc1d46fff8725079cee988d0955a3da9a2ef30abc30ef1bd947f48e0" +
-		"93aad8405db1d268e4b2a1a14395b5eb3a5c3f3d265782efc28b9a94cc" +
-		"1d46fff8725079cee988d0955a3da9a2ef30abc30ef1bd947f48e093aad" +
-		"8405db1d268")
-
-	c.Assert(AppendPoint(prev, p), DeepEquals, exp)
-}
-
-func (s *UtilsSuite) Test_ExtractPoint(c *C) {
-	bs, _ := hex.DecodeString("e4b2a1a14395b5eb3a5c3f3d265782efc28b9a94c" +
-		"c1d46fff8725079cee988d0955a3da9a2ef30abc30ef1bd947f48e093aa" +
-		"d8405db1d268e4b2a1a14395b5eb3a5c3f3d265782efc28b9a94cc1d46f" +
-		"ff8725079cee988d0955a3da9a2ef30abc30ef1bd947f48e093aad8405d" +
-		"b1d268")
-	cursor := 0
-
-	exp := ed448.NewPoint(
-		[16]uint32{
-			0x034365c8, 0x06b2a874, 0x0eb875d7, 0x0ae4c7a7,
-			0x0785df04, 0x09929351, 0x01fe8c3b, 0x0f2a0e5f,
-			0x0111d39c, 0x07ab52ba, 0x01df4552, 0x01d87566,
-			0x0f297be2, 0x027c090f, 0x0a81b155, 0x0d1a562b,
-		},
-		[16]uint32{
-			0x00da9708, 0x0e7d583e, 0x0dbcc099, 0x0d2dad89,
-			0x05a49ce4, 0x01cb4ddc, 0x0928d395, 0x0098d91d,
-			0x0bff16ce, 0x06f02f9a, 0x0ce27cc1, 0x0dab5783,
-			0x0b553d94, 0x03251a0c, 0x064d70fb, 0x07fe3a2f,
-		},
-		[16]uint32{
-			0x0d5237cc, 0x0319d105, 0x02ab2df5, 0x022e9736,
-			0x0d79742f, 0x00688712, 0x012d3a65, 0x0ef4925e,
-			0x0bd0d260, 0x0832b532, 0x05faef27, 0x01ffe567,
-			0x0161ce73, 0x07bda0f5, 0x035d04f1, 0x0930f532,
-		},
-		[16]uint32{
-			0x01f6cc27, 0x09be7b8a, 0x0226da79, 0x0f6202f1,
-			0x0e7264dc, 0x0d25aeb1, 0x06c81f07, 0x03c32cdc,
-			0x0923c854, 0x0cfc9865, 0x055b2fed, 0x05bdcc90,
-			0x01a99835, 0x0ea08056, 0x0abbf763, 0x03826c2f,
-		},
-	)
-
-	p, cursor, err := ExtractPoint(bs, cursor)
-
-	c.Assert(p, DeepEquals, exp)
-	c.Assert(cursor, Equals, 56)
-	c.Assert(err, IsNil)
-
-	bs = []byte{}
-	cursor = 0
-
-	p, cursor, err = ExtractPoint(bs, cursor)
-
-	c.Assert(p, DeepEquals, nil)
-	c.Assert(cursor, Equals, 0)
-	c.Assert(err, ErrorMatches, "invalid length")
 }
