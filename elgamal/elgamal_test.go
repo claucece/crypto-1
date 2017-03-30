@@ -1,6 +1,7 @@
 package elgamal
 
 import (
+	"crypto/rand"
 	"testing"
 
 	. "gopkg.in/check.v1"
@@ -42,12 +43,32 @@ func (s *EGSuite) Test_DerivePrivateKey(c *C) {
 		}),
 	}
 
-	priv, err := deriveElGamalPrivKey(FixedRand(egRandData))
+	priv, err := derivePrivKey(FixedRand(egRandData))
 	c.Assert(priv, DeepEquals, expPriv)
 	c.Assert(err, IsNil)
 
 	r := make([]byte, 55)
-	_, err = deriveElGamalPrivKey(FixedRand(r))
+	_, err = derivePrivKey(FixedRand(r))
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
+}
+
+func (s *EGSuite) Test_EncryptionAndDecryption(c *C) {
+	message := []byte{
+		0xfd, 0xf1, 0x18, 0xbf, 0x8e, 0xc9, 0x64, 0xc7,
+		0x94, 0x46, 0x49, 0xda, 0xcd, 0xac, 0x2c, 0xff,
+		0x72, 0x5e, 0xb7, 0x61, 0x46, 0xf1, 0x93, 0xa6,
+		0x70, 0x81, 0x64, 0x37, 0x7c, 0xec, 0x6c, 0xe5,
+		0xc6, 0x8d, 0x8f, 0xa0, 0x43, 0x23, 0x45, 0x33,
+		0x73, 0x79, 0xa6, 0x48, 0x57, 0xbb, 0x0f, 0x70,
+		0x63, 0x8c, 0x62, 0x26, 0x9e, 0x17, 0x5d, 0x22,
+	}
+
+	keyPair, err := GenerateKeys(rand.Reader)
+	c1, c2, err := Encrypt(rand.Reader, keyPair.Pub, message)
+
+	expMessage := Decrypt(keyPair.Priv, c1, c2)
+
+	c.Assert(expMessage, DeepEquals, message)
+	c.Assert(err, IsNil)
 }
