@@ -9,7 +9,6 @@ import (
 	. "github.com/twtiger/crypto/utils"
 )
 
-// XXX: serialize as MPI
 type cramerShoupPrivateKey struct {
 	x1, x2, y1, y2, z ed448.Scalar
 }
