@@ -7,6 +7,10 @@ import (
 	"github.com/twtiger/crypto/utils"
 )
 
+// TODO: does it really make sense to represent the parameters of
+// the exchange (G and Q) as part of the PublicKey? I'm not sure I like it -
+// seems like that should be somewhere else
+
 // PublicKey represents an ElGamal public key.
 type PublicKey struct {
 	G ed448.Point

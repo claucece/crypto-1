@@ -10,6 +10,9 @@ import (
 	"github.com/twtiger/crypto/utils"
 )
 
+// TODO: it seems none of the functions and types in this package are exposed, so no-one could actually use them
+// should we expose them if they are valuable to people?
+
 type drCipher struct {
 	u11, u21, e1, v1, u12, u22, e2, v2 ed448.Point
 }
@@ -25,6 +28,7 @@ type drMessage struct {
 
 func isValidPublicKey(pubs ...*cs.PublicKey) error {
 	for _, pub := range pubs {
+		// TODO: not sure if this matters, but this check is not constant time
 		if !(pub.C.IsOnCurve() && pub.D.IsOnCurve() && pub.H.IsOnCurve()) {
 			return errors.New("not a valid public key")
 		}

@@ -15,6 +15,7 @@ func FixedRand(data []byte) io.Reader {
 func (r *fixedRandReader) Read(p []byte) (n int, err error) {
 	if r.at < len(r.data) {
 		n = copy(p, r.data[r.at:])
+		// TODO: is this a bug or not?
 		r.at += 56
 		return
 	}

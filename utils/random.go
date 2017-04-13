@@ -32,6 +32,8 @@ func RandLongTermScalar(rand io.Reader) (ed448.Scalar, error) {
 
 	hash := sha3.NewShake256()
 	hash.Write(b[:])
+
+	// TODO: should this really be hardcoded here?
 	hash.Write([]byte("cramershoup_secret"))
 	hash.Read(out[:])
 
