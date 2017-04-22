@@ -8,7 +8,15 @@ import (
 
 // ElGamal is an instance of the ElGamal Cryptosystem
 type ElGamal struct {
-	Curve curve.Curve
+	Curve Curve
+}
+
+// Curve defines what curve functions are required for the ElGamal Cryptosystem
+type Curve interface {
+	curve.BasicCurve
+	curve.PrecomputedMultiplier
+	curve.PointCalculator
+	curve.Decoder
 }
 
 // PublicKey represents an ElGamal public key.
