@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"crypto/rand"
 	"errors"
 	"io"
 
@@ -39,4 +40,20 @@ func RandLongTermScalar(rand io.Reader) (ed448.Scalar, error) {
 	hash.Read(out[:])
 
 	return ed448.NewScalar(out[:]), nil
+}
+
+// MustCreateRandScalar returns a random scalar and panics if it cannot create one
+// This was only created for testing purposes
+func MustCreateRandScalar() curve.Scalar {
+	var b [fieldBytes]byte
+	_, err := io.ReadFull(rand.Reader, b[:])
+	if err != nil {
+		panic("cannot source enough entropy to create a random scalar")
+	}
+	var out [fieldBytes]byte
+	hash := sha3.NewShake256()
+	hash.Write(b[:])
+	hash.Read(out[:])
+	return curve.Ed448GoldScalar(b[:])
+
 }

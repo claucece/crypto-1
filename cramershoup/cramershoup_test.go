@@ -261,11 +261,11 @@ func (s *CSSuite) Test_EncryptAndDecrypt(c *C) {
 	keyPair, err = cs.GenerateKeys(rand.Reader)
 	csm, err = cs.Encrypt(message, rand.Reader, keyPair.Pub)
 	priv := &PrivateKey{
-		curve.Ed448GoldScalar(nil),
-		curve.Ed448GoldScalar(nil),
-		curve.Ed448GoldScalar(nil),
-		curve.Ed448GoldScalar(nil),
-		curve.Ed448GoldScalar(nil),
+		utils.MustCreateRandScalar(),
+		utils.MustCreateRandScalar(),
+		utils.MustCreateRandScalar(),
+		utils.MustCreateRandScalar(),
+		utils.MustCreateRandScalar(),
 	}
 	expMessage, err = cs.Decrypt(priv, csm)
 

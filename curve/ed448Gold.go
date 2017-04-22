@@ -53,9 +53,6 @@ type Ed448Gold struct{}
 
 // Ed448GoldScalar returns a new Ed448-Goldilocks scalar
 func Ed448GoldScalar(bs []byte) Scalar {
-	if bs == nil {
-		return wrapScalar(ed448.NewScalar())
-	}
 	return wrapScalar(ed448.NewScalar(bs))
 }
 
@@ -66,9 +63,6 @@ func Ed448GoldPoint(a [16]uint32, b [16]uint32, c [16]uint32, d [16]uint32) Poin
 
 // Ed448GoldPointFromBytes returns a new Ed448-Goldilocks point from a slice of bytes
 func Ed448GoldPointFromBytes(bs []byte) Point {
-	if bs == nil {
-		return wrapPoint(ed448.NewPointFromBytes())
-	}
 	return wrapPoint(ed448.NewPointFromBytes(bs))
 }
 
