@@ -100,6 +100,7 @@ func (c *Ed448Gold) RandLongTermScalar(r io.Reader) (Scalar, error) {
 	hash := sha3.NewShake256()
 	hash.Write(b[:])
 	// TODO: should this really be hardcoded here?
+	// TODO: this exact string is required for the tests to pass. should we use the cramershoup_secret string for the elgamal system?
 	hash.Write([]byte("cramershoup_secret"))
 	var out [scalarSize]byte
 	hash.Read(out[:])
