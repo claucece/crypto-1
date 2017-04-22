@@ -20,6 +20,7 @@ type DRE struct {
 // Curve defines what curve functions are required for Dual Receiver Encryption
 type Curve interface {
 	curve.BasicCurve
+	curve.SecondGenerator
 	curve.PointDoubleScalarMultiplier
 	curve.PointCalculator
 	curve.PointComparer
@@ -68,7 +69,7 @@ func (d *DRE) genNIZKPK(rand io.Reader, m *drCipher, pub1, pub2 *cs.PublicKey, a
 	// TODO: why not PrecompScalarMul?
 	t11 := d.Curve.PointScalarMul(d.Curve.G(), t1)
 	// T21 = G2 * t1
-	t21 := d.Curve.PointScalarMul(utils.G2, t1)
+	t21 := d.Curve.PointScalarMul(d.Curve.G2(), t1)
 	// T31 = (C1 + D1 * α1) * t1
 	t31 := d.Curve.PointScalarMul(pub1.D, alpha1)
 	t31 = d.Curve.AddPoints(pub1.C, t31)
@@ -78,7 +79,7 @@ func (d *DRE) genNIZKPK(rand io.Reader, m *drCipher, pub1, pub2 *cs.PublicKey, a
 	// TODO: why not PrecompScalarMul?
 	t12 := d.Curve.PointScalarMul(d.Curve.G(), t2)
 	// T22 = G2 * t2
-	t22 := d.Curve.PointScalarMul(utils.G2, t2)
+	t22 := d.Curve.PointScalarMul(d.Curve.G2(), t2)
 	// T32 = (C2 + D2 * α2) * t2
 	t32 := d.Curve.PointScalarMul(pub2.D, alpha2)
 	t32 = d.Curve.AddPoints(pub2.C, t32)
@@ -90,7 +91,7 @@ func (d *DRE) genNIZKPK(rand io.Reader, m *drCipher, pub1, pub2 *cs.PublicKey, a
 	t4 = d.Curve.SubPoints(a, t4)
 
 	// gV = G1 || G2 || q
-	gV := utils.AppendBytes(d.Curve.G(), utils.G2, d.Curve.Q())
+	gV := utils.AppendBytes(d.Curve.G(), d.Curve.G2(), d.Curve.Q())
 	// pV = C1 || D1 || H1 || C2 || D2 || H2
 	pV := utils.AppendBytes(pub1.C, pub1.D, pub1.H, pub2.C, pub2.D, pub2.H)
 	// eV = U11 || U21 || E1 || V1 || α1 || U12 || U22 || E2 || V2 || α2
@@ -115,7 +116,7 @@ func (d *DRE) isValid(pf *nIZKProof, m *drCipher, pub1, pub2 *cs.PublicKey, alph
 	// T1j = G1 * nj + U1j * l
 	t11 := d.Curve.PointDoubleScalarMul(d.Curve.G(), pf.n1, m.u11, pf.l)
 	// T2j = G2 * nj + U2j * l
-	t21 := d.Curve.PointDoubleScalarMul(utils.G2, pf.n1, m.u21, pf.l)
+	t21 := d.Curve.PointDoubleScalarMul(d.Curve.G2(), pf.n1, m.u21, pf.l)
 	// T3j = (Cj + Dj * αj) * nj + Vj * l
 	t31 := d.Curve.PointScalarMul(pub1.D, alpha1)
 	t31 = d.Curve.AddPoints(pub1.C, t31)
@@ -124,7 +125,7 @@ func (d *DRE) isValid(pf *nIZKProof, m *drCipher, pub1, pub2 *cs.PublicKey, alph
 	// T1j = G1 * nj + U1j * l
 	t12 := d.Curve.PointDoubleScalarMul(d.Curve.G(), pf.n2, m.u12, pf.l)
 	// T2j = G2 * nj + U2j * l
-	t22 := d.Curve.PointDoubleScalarMul(utils.G2, pf.n2, m.u22, pf.l)
+	t22 := d.Curve.PointDoubleScalarMul(d.Curve.G2(), pf.n2, m.u22, pf.l)
 	// T3j = (Cj + Dj * αj) * nj + Vj * l
 	t32 := d.Curve.PointScalarMul(pub2.D, alpha2)
 	t32 = d.Curve.AddPoints(pub2.C, t32)
@@ -141,7 +142,7 @@ func (d *DRE) isValid(pf *nIZKProof, m *drCipher, pub1, pub2 *cs.PublicKey, alph
 	t4 = d.Curve.AddPoints(b, t4)
 
 	// gV = G1 || G2 || q
-	gV := utils.AppendBytes(d.Curve.G(), utils.G2, d.Curve.Q())
+	gV := utils.AppendBytes(d.Curve.G(), d.Curve.G2(), d.Curve.Q())
 	// pV = C1 || D1 || H1 || C2 || D2 || H2
 	pV := utils.AppendBytes(pub1.C, pub1.D, pub1.H, pub2.C, pub2.D, pub2.H)
 	// eV = U11 || U21 || E1 || V1 || α1 || U12 || U22 || E2 || V2 || α2
@@ -195,9 +196,9 @@ func (d *DRE) drEnc(message []byte, rand io.Reader, pub1, pub2 *cs.PublicKey) (*
 	gamma := &drMessage{}
 	// u1i = G1*ki, u2i = G2*ki
 	gamma.cipher.u11 = d.Curve.PointScalarMul(d.Curve.G(), k1)
-	gamma.cipher.u21 = d.Curve.PointScalarMul(utils.G2, k1)
+	gamma.cipher.u21 = d.Curve.PointScalarMul(d.Curve.G2(), k1)
 	gamma.cipher.u12 = d.Curve.PointScalarMul(d.Curve.G(), k2)
-	gamma.cipher.u22 = d.Curve.PointScalarMul(utils.G2, k2)
+	gamma.cipher.u22 = d.Curve.PointScalarMul(d.Curve.G2(), k2)
 
 	// ei = (hi*ki) + m
 	m := curve.Ed448GoldPointFromBytes(message)

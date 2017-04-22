@@ -16,6 +16,7 @@ type CramerShoup struct {
 // Curve defines what curve functions are required for the Cramer-Shoup Cryptosystem
 type Curve interface {
 	curve.BasicCurve
+	curve.SecondGenerator
 	curve.PointDoubleScalarMultiplier
 	curve.PointCalculator
 	curve.PointComparer
@@ -67,8 +68,8 @@ func (cs *CramerShoup) GenerateKeys(rand io.Reader) (*KeyPair, error) {
 	}
 
 	keyPair.Pub = &PublicKey{}
-	keyPair.Pub.C = cs.Curve.PointDoubleScalarMul(cs.Curve.G(), keyPair.Priv.X1, utils.G2, keyPair.Priv.X2)
-	keyPair.Pub.D = cs.Curve.PointDoubleScalarMul(cs.Curve.G(), keyPair.Priv.Y1, utils.G2, keyPair.Priv.Y2)
+	keyPair.Pub.C = cs.Curve.PointDoubleScalarMul(cs.Curve.G(), keyPair.Priv.X1, cs.Curve.G2(), keyPair.Priv.X2)
+	keyPair.Pub.D = cs.Curve.PointDoubleScalarMul(cs.Curve.G(), keyPair.Priv.Y1, cs.Curve.G2(), keyPair.Priv.Y2)
 	keyPair.Pub.H = cs.Curve.PointScalarMul(cs.Curve.G(), keyPair.Priv.Z)
 
 	return keyPair, nil
@@ -87,7 +88,7 @@ func (cs *CramerShoup) Encrypt(message []byte, rand io.Reader, pub *PublicKey) (
 
 	// u = G1*r, u2 = G2*r
 	csm.U1 = cs.Curve.PointScalarMul(cs.Curve.G(), r)
-	csm.U2 = cs.Curve.PointScalarMul(utils.G2, r)
+	csm.U2 = cs.Curve.PointScalarMul(cs.Curve.G2(), r)
 
 	// e = (h*r) + m
 	csm.E = cs.Curve.AddPoints(cs.Curve.PointScalarMul(pub.H, r), cs.Curve.DecodePoint(message))

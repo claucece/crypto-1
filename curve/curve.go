@@ -12,6 +12,11 @@ type BasicCurve interface {
 	RandLongTermScalar(io.Reader) (Scalar, error)
 }
 
+// SecondGenerator is an interface for retrieving a second generator on a curve
+type SecondGenerator interface {
+	G2() Point
+}
+
 // Decoder will decode points for the curve
 type Decoder interface {
 	DecodePoint([]byte) Point
