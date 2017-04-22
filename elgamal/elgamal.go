@@ -3,24 +3,22 @@ package elgamal
 import (
 	"io"
 
-	"github.com/twstrike/ed448"
-	"github.com/twtiger/crypto/utils"
+	"github.com/twtiger/crypto/curve"
 )
 
-// TODO: does it really make sense to represent the parameters of
-// the exchange (G and Q) as part of the PublicKey? I'm not sure I like it -
-// seems like that should be somewhere else
+// ElGamal is an instance of the ElGamal Cryptosystem
+type ElGamal struct {
+	curve curve.Curve
+}
 
 // PublicKey represents an ElGamal public key.
 type PublicKey struct {
-	G ed448.Point
-	Q ed448.Scalar
-	Y ed448.Point
+	Y curve.Point
 }
 
 // PrivateKey represents an ElGamal private key.
 type PrivateKey struct {
-	X ed448.Scalar
+	X curve.Scalar
 }
 
 // KeyPair represents an ElGamal key pair.
@@ -29,11 +27,11 @@ type KeyPair struct {
 	Priv *PrivateKey
 }
 
-func derivePrivKey(rand io.Reader) (*PrivateKey, error) {
+func (eg *ElGamal) derivePrivKey(rand io.Reader) (*PrivateKey, error) {
 	priv := &PrivateKey{}
 	var err error
 
-	priv.X, err = utils.RandLongTermScalar(rand)
+	priv.X, err = eg.curve.RandLongTermScalar(rand)
 	if err != nil {
 		return nil, err
 	}
@@ -42,42 +40,34 @@ func derivePrivKey(rand io.Reader) (*PrivateKey, error) {
 }
 
 // GenerateKeys generates a key pair of ElGamal keys.
-func GenerateKeys(rand io.Reader) (*KeyPair, error) {
+func (eg *ElGamal) GenerateKeys(rand io.Reader) (*KeyPair, error) {
 	var err error
 	keyPair := &KeyPair{}
 
-	keyPair.Priv, err = derivePrivKey(rand)
+	keyPair.Priv, err = eg.derivePrivKey(rand)
 	if err != nil {
 		return nil, err
 	}
 
 	keyPair.Pub = &PublicKey{}
-	keyPair.Pub.G = ed448.BasePoint
-	keyPair.Pub.Q = ed448.ScalarQ
-	keyPair.Pub.Y = ed448.PrecomputedScalarMul(keyPair.Priv.X)
+	keyPair.Pub.Y = eg.curve.PrecompScalarMul(keyPair.Priv.X)
 
 	return keyPair, nil
 }
 
 // Encrypt encrypts the given message to the given public key. The result is a
 // pair of integers. Errors can result from reading random.
-func Encrypt(rand io.Reader, pub *PublicKey, message []byte) (c1, c2 ed448.Point, err error) {
-	m := ed448.NewPointFromBytes()
-	m.Decode(message, false)
-
-	k, err := utils.RandLongTermScalar(rand)
+func (eg *ElGamal) Encrypt(rand io.Reader, pub *PublicKey, message []byte) (c1, c2 curve.Point, err error) {
+	m := eg.curve.DecodePoint(message)
+	k, err := eg.curve.RandLongTermScalar(rand)
 	if err != nil {
 		return nil, nil, err
 	}
-
 	// XXX: check the mod
-	c1 = ed448.PrecomputedScalarMul(k)
+	c1 = eg.curve.PrecompScalarMul(k)
 	// XXX: expose the s?
-	s := ed448.PointScalarMul(pub.Y, k)
-
-	c2 = ed448.NewPointFromBytes()
-	c2.Add(s, m)
-
+	s := eg.curve.PointScalarMul(pub.Y, k)
+	c2 = eg.curve.Add(s, m)
 	return
 }
 
@@ -88,12 +78,9 @@ func Encrypt(rand io.Reader, pub *PublicKey, message []byte) (c1, c2 ed448.Point
 // be used to break the cryptosystem.  See ``Chosen Ciphertext Attacks
 // Against Protocols Based on the RSA Encryption Standard PKCS #1'', Daniel
 // Bleichenbacher, Advances in Cryptology (Crypto '98).
-func Decrypt(priv *PrivateKey, c1, c2 ed448.Point) []byte {
-	s := ed448.PointScalarMul(c1, priv.X)
-	m := ed448.NewPointFromBytes()
-	m.Sub(c2, s)
-
+func (eg *ElGamal) Decrypt(priv *PrivateKey, c1, c2 curve.Point) []byte {
+	s := eg.curve.PointScalarMul(c1, priv.X)
+	m := eg.curve.Sub(c2, s)
 	msg := m.Encode()
-
 	return msg
 }

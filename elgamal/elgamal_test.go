@@ -6,7 +6,7 @@ import (
 
 	. "gopkg.in/check.v1"
 
-	"github.com/twstrike/ed448"
+	"github.com/twtiger/crypto/curve"
 	"github.com/twtiger/crypto/utils"
 )
 
@@ -30,7 +30,7 @@ var (
 
 	testPriv = &PrivateKey{
 		// X
-		ed448.NewScalar([]byte{
+		curve.Ed448GoldScalar([]byte{
 			0xc6, 0xd0, 0x98, 0x2e, 0xe4, 0xe5, 0x81, 0xe4,
 			0x61, 0x3c, 0x46, 0x99, 0x0a, 0x37, 0x79, 0xc3,
 			0xfa, 0xe5, 0xd5, 0x29, 0x27, 0x31, 0xa3, 0x55,
@@ -43,12 +43,8 @@ var (
 	}
 
 	testPub = &PublicKey{
-		// G
-		ed448.NewPointFromBytes(),
-		// Q
-		ed448.NewScalar(),
 		// Y
-		ed448.NewPoint(
+		curve.Ed448GoldPoint(
 			[16]uint32{
 				0x0ccd1054, 0x0dd85c70, 0x095dc098, 0x005fdf78,
 				0x0f6d2050, 0x064a76af, 0x08363bce, 0x014325f1,
@@ -78,30 +74,33 @@ var (
 )
 
 func (s *EGSuite) Test_DerivePrivateKey(c *C) {
-	priv, err := derivePrivKey(utils.FixedRand(egRandData))
+	eg := &ElGamal{&curve.Ed448Gold{}}
+	priv, err := eg.derivePrivKey(utils.FixedRand(egRandData))
 
 	c.Assert(priv, DeepEquals, testPriv)
 	c.Assert(err, IsNil)
 
 	r := make([]byte, 55)
-	_, err = derivePrivKey(utils.FixedRand(r))
+	_, err = eg.derivePrivKey(utils.FixedRand(r))
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
 
 func (s *EGSuite) Test_GenerateKeys(c *C) {
-	pair, err := GenerateKeys(utils.FixedRand(egRandData))
+	eg := &ElGamal{&curve.Ed448Gold{}}
+	pair, err := eg.GenerateKeys(utils.FixedRand(egRandData))
 	c.Assert(pair.Pub.Y, DeepEquals, testPub.Y)
 	c.Assert(pair.Priv, DeepEquals, testPriv)
 	c.Assert(err, IsNil)
 
 	r := make([]byte, 55)
-	_, err = GenerateKeys(utils.FixedRand(r))
+	_, err = eg.GenerateKeys(utils.FixedRand(r))
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
 
 func (s *EGSuite) Test_EncryptionAndDecryption(c *C) {
+	eg := &ElGamal{&curve.Ed448Gold{}}
 	message := []byte{
 		0xfd, 0xf1, 0x18, 0xbf, 0x8e, 0xc9, 0x64, 0xc7,
 		0x94, 0x46, 0x49, 0xda, 0xcd, 0xac, 0x2c, 0xff,
@@ -112,15 +111,15 @@ func (s *EGSuite) Test_EncryptionAndDecryption(c *C) {
 		0x63, 0x8c, 0x62, 0x26, 0x9e, 0x17, 0x5d, 0x22,
 	}
 
-	keyPair, err := GenerateKeys(rand.Reader)
-	c1, c2, err := Encrypt(rand.Reader, keyPair.Pub, message)
-	expMessage := Decrypt(keyPair.Priv, c1, c2)
+	keyPair, err := eg.GenerateKeys(rand.Reader)
+	c1, c2, err := eg.Encrypt(rand.Reader, keyPair.Pub, message)
+	expMessage := eg.Decrypt(keyPair.Priv, c1, c2)
 
 	c.Assert(expMessage, DeepEquals, message)
 	c.Assert(err, IsNil)
 
-	keyPair, err = GenerateKeys(rand.Reader)
-	c1, c2, err = Encrypt(utils.FixedRand([]byte{0x00}), keyPair.Pub, message)
+	keyPair, err = eg.GenerateKeys(rand.Reader)
+	c1, c2, err = eg.Encrypt(utils.FixedRand([]byte{0x00}), keyPair.Pub, message)
 
 	c.Assert(expMessage, DeepEquals, message)
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
