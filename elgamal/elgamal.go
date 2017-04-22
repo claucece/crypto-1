@@ -16,49 +16,40 @@ type PublicKey struct {
 	Y curve.Point
 }
 
-// PrivateKey represents an ElGamal private key.
-type PrivateKey struct {
+// SecretKey represents an ElGamal private key.
+type SecretKey struct {
 	X curve.Scalar
 }
 
 // KeyPair represents an ElGamal key pair.
 type KeyPair struct {
-	Pub  *PublicKey
-	Priv *PrivateKey
+	Pub *PublicKey
+	Sec *SecretKey
 }
 
-func (eg *ElGamal) derivePrivKey(rand io.Reader) (*PrivateKey, error) {
-	priv := &PrivateKey{}
-	var err error
-
-	priv.X, err = eg.curve.RandLongTermScalar(rand)
+func (eg *ElGamal) secretKey(rand io.Reader) (*SecretKey, error) {
+	x, err := eg.curve.RandLongTermScalar(rand)
 	if err != nil {
 		return nil, err
 	}
-
-	return priv, err
+	return &SecretKey{x}, nil
 }
 
 // GenerateKeys generates a key pair of ElGamal keys.
 func (eg *ElGamal) GenerateKeys(rand io.Reader) (*KeyPair, error) {
-	var err error
-	keyPair := &KeyPair{}
-
-	keyPair.Priv, err = eg.derivePrivKey(rand)
+	sk, err := eg.secretKey(rand)
 	if err != nil {
 		return nil, err
 	}
-
-	keyPair.Pub = &PublicKey{}
-	keyPair.Pub.Y = eg.curve.PrecompScalarMul(keyPair.Priv.X)
-
-	return keyPair, nil
+	return &KeyPair{
+		Pub: &PublicKey{eg.curve.PrecompScalarMul(sk.X)},
+		Sec: sk,
+	}, nil
 }
 
 // Encrypt encrypts the given message to the given public key. The result is a
 // pair of integers. Errors can result from reading random.
 func (eg *ElGamal) Encrypt(rand io.Reader, pub *PublicKey, message []byte) (c1, c2 curve.Point, err error) {
-	m := eg.curve.DecodePoint(message)
 	k, err := eg.curve.RandLongTermScalar(rand)
 	if err != nil {
 		return nil, nil, err
@@ -67,7 +58,7 @@ func (eg *ElGamal) Encrypt(rand io.Reader, pub *PublicKey, message []byte) (c1, 
 	c1 = eg.curve.PrecompScalarMul(k)
 	// XXX: expose the s?
 	s := eg.curve.PointScalarMul(pub.Y, k)
-	c2 = eg.curve.Add(s, m)
+	c2 = eg.curve.Add(s, eg.curve.DecodePoint(message))
 	return
 }
 
@@ -78,9 +69,7 @@ func (eg *ElGamal) Encrypt(rand io.Reader, pub *PublicKey, message []byte) (c1, 
 // be used to break the cryptosystem.  See ``Chosen Ciphertext Attacks
 // Against Protocols Based on the RSA Encryption Standard PKCS #1'', Daniel
 // Bleichenbacher, Advances in Cryptology (Crypto '98).
-func (eg *ElGamal) Decrypt(priv *PrivateKey, c1, c2 curve.Point) []byte {
-	s := eg.curve.PointScalarMul(c1, priv.X)
-	m := eg.curve.Sub(c2, s)
-	msg := m.Encode()
-	return msg
+func (eg *ElGamal) Decrypt(sec *SecretKey, c1, c2 curve.Point) []byte {
+	s := eg.curve.PointScalarMul(c1, sec.X)
+	return eg.curve.Sub(c2, s).Encode()
 }

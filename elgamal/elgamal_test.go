@@ -28,7 +28,7 @@ var (
 		0x90, 0x3e, 0xf4, 0xa3, 0x75, 0xee, 0x85, 0x32,
 	}
 
-	testPriv = &PrivateKey{
+	testSec = &SecretKey{
 		// X
 		curve.Ed448GoldScalar([]byte{
 			0xc6, 0xd0, 0x98, 0x2e, 0xe4, 0xe5, 0x81, 0xe4,
@@ -73,34 +73,37 @@ var (
 	}
 )
 
-func (s *EGSuite) Test_DerivePrivateKey(c *C) {
-	eg := &ElGamal{&curve.Ed448Gold{}}
-	priv, err := eg.derivePrivKey(utils.FixedRand(egRandData))
+var eg *ElGamal
 
-	c.Assert(priv, DeepEquals, testPriv)
+func (s *EGSuite) SetUpTest(c *C) {
+	eg = &ElGamal{&curve.Ed448Gold{}}
+}
+
+func (s *EGSuite) Test_DeriveSecretKey(c *C) {
+	priv, err := eg.secretKey(utils.FixedRand(egRandData))
+
+	c.Assert(priv, DeepEquals, testSec)
 	c.Assert(err, IsNil)
 
 	r := make([]byte, 55)
-	_, err = eg.derivePrivKey(utils.FixedRand(r))
+	_, err = eg.secretKey(utils.FixedRand(r))
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
 
 func (s *EGSuite) Test_GenerateKeys(c *C) {
-	eg := &ElGamal{&curve.Ed448Gold{}}
 	pair, err := eg.GenerateKeys(utils.FixedRand(egRandData))
-	c.Assert(pair.Pub.Y, DeepEquals, testPub.Y)
-	c.Assert(pair.Priv, DeepEquals, testPriv)
+
+	c.Assert(pair.Pub, DeepEquals, testPub)
+	c.Assert(pair.Sec, DeepEquals, testSec)
 	c.Assert(err, IsNil)
 
 	r := make([]byte, 55)
 	_, err = eg.GenerateKeys(utils.FixedRand(r))
-
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
 
 func (s *EGSuite) Test_EncryptionAndDecryption(c *C) {
-	eg := &ElGamal{&curve.Ed448Gold{}}
 	message := []byte{
 		0xfd, 0xf1, 0x18, 0xbf, 0x8e, 0xc9, 0x64, 0xc7,
 		0x94, 0x46, 0x49, 0xda, 0xcd, 0xac, 0x2c, 0xff,
@@ -110,10 +113,9 @@ func (s *EGSuite) Test_EncryptionAndDecryption(c *C) {
 		0x73, 0x79, 0xa6, 0x48, 0x57, 0xbb, 0x0f, 0x70,
 		0x63, 0x8c, 0x62, 0x26, 0x9e, 0x17, 0x5d, 0x22,
 	}
-
 	keyPair, err := eg.GenerateKeys(rand.Reader)
 	c1, c2, err := eg.Encrypt(rand.Reader, keyPair.Pub, message)
-	expMessage := eg.Decrypt(keyPair.Priv, c1, c2)
+	expMessage := eg.Decrypt(keyPair.Sec, c1, c2)
 
 	c.Assert(expMessage, DeepEquals, message)
 	c.Assert(err, IsNil)
