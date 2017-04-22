@@ -2,6 +2,7 @@ package utils
 
 import (
 	"github.com/twstrike/ed448"
+	"github.com/twtiger/crypto/curve"
 
 	. "gopkg.in/check.v1"
 )
@@ -54,7 +55,7 @@ var (
 func (s *UtilsSuite) Test_RandomScalar(c *C) {
 	scalar, err := RandScalar(FixedRand(randData))
 
-	exp := ed448.NewScalar(
+	exp := curve.Ed448GoldScalar(
 		[]byte{
 			0x40, 0x80, 0x66, 0x2d, 0xd8, 0xe7, 0xf0, 0x9c,
 			0xdf, 0xb0, 0x4e, 0x1c, 0x6e, 0x12, 0x62, 0xa3,

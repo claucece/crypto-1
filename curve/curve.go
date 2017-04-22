@@ -26,13 +26,23 @@ type PrecomputedMultiplier interface {
 // PointDoubleScalarMultiplier will add the results of two point scalar multiplications
 // The result is p1 * s1 + p2 * s2
 type PointDoubleScalarMultiplier interface {
-	PointDoubleScalarMul(p1 Point, s1 Scalar, p2 Point, s2 Scalar)
+	PointDoubleScalarMul(p1 Point, s1 Scalar, p2 Point, s2 Scalar) Point
 }
 
 // PointCalculator computes point arithmetic
 type PointCalculator interface {
-	Add(Point, Point) Point
-	Sub(Point, Point) Point
+	AddPoints(Point, Point) Point
+	SubPoints(Point, Point) Point
+}
+
+// PointComparer checks whether two points are equal
+type PointComparer interface {
+	EqualPoints(Point, Point) bool
+}
+
+// PointValidator will check whether a point is on the curve
+type PointValidator interface {
+	IsOnCurve(Point) bool
 }
 
 // Point is the point interface required for interacting with the included cryptosystems
@@ -41,4 +51,21 @@ type Point interface {
 }
 
 // Scalar is the scalar interface required for interacting with the included cryptosystems
-type Scalar interface{}
+type Scalar interface {
+	Encode() []byte
+}
+
+// ScalarMultiplier multiplies two scalars
+type ScalarMultiplier interface {
+	Mul(Scalar, Scalar) Scalar
+}
+
+// ScalarCalculator computes point arithmetic
+type ScalarCalculator interface {
+	SubScalars(Scalar, Scalar) Scalar
+}
+
+// ScalarComparer checks whether two scalars are equal
+type ScalarComparer interface {
+	EqualScalars(Scalar, Scalar) bool
+}

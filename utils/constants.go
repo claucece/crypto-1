@@ -1,6 +1,6 @@
 package utils
 
-import "github.com/twstrike/ed448"
+import "github.com/twtiger/crypto/curve"
 
 const (
 	fieldBytes = 56
@@ -8,7 +8,7 @@ const (
 
 var (
 	// G2 is the second generator from ed448
-	G2 = ed448.NewPoint(
+	G2 = curve.Ed448GoldPoint(
 		[16]uint32{
 			0x0cf14237, 0x0ac97f43, 0x0a9543bc, 0x0dc98db8,
 			0x0bcca6a6, 0x07874a17, 0x021af78f, 0x0fffa763,

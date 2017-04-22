@@ -1,14 +1,14 @@
 package utils
 
 import (
-	"github.com/twstrike/ed448"
+	"github.com/twtiger/crypto/curve"
 	"golang.org/x/crypto/sha3"
 )
 
-func shakeToScalar(in []byte) ed448.Scalar {
+func shakeToScalar(in []byte) curve.Scalar {
 	hash := make([]byte, 56)
 	sha3.ShakeSum256(hash, in)
-	s := ed448.NewScalar(hash)
+	s := curve.Ed448GoldScalar(hash)
 	return s
 }
 
@@ -22,9 +22,9 @@ func AppendBytes(bs ...interface{}) []byte {
 
 	for _, e := range bs {
 		switch i := e.(type) {
-		case ed448.Point:
+		case curve.Point:
 			b = append(b, i.Encode()...)
-		case ed448.Scalar:
+		case curve.Scalar:
 			b = append(b, i.Encode()...)
 		case []byte:
 			b = append(b, i...)
@@ -36,6 +36,6 @@ func AppendBytes(bs ...interface{}) []byte {
 }
 
 // AppendAndHash appends and hash bytes arrays
-func AppendAndHash(bs ...interface{}) ed448.Scalar {
+func AppendAndHash(bs ...interface{}) curve.Scalar {
 	return shakeToScalar(AppendBytes(bs...))
 }

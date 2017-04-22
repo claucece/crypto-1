@@ -66,7 +66,7 @@ func (eg *ElGamal) Encrypt(rand io.Reader, pub *PublicKey, message []byte) (c1, 
 	c1 = eg.Curve.PrecompScalarMul(k)
 	// XXX: expose the s?
 	s := eg.Curve.PointScalarMul(pub.Y, k)
-	c2 = eg.Curve.Add(s, eg.Curve.DecodePoint(message))
+	c2 = eg.Curve.AddPoints(s, eg.Curve.DecodePoint(message))
 	return
 }
 
@@ -79,5 +79,5 @@ func (eg *ElGamal) Encrypt(rand io.Reader, pub *PublicKey, message []byte) (c1, 
 // Bleichenbacher, Advances in Cryptology (Crypto '98).
 func (eg *ElGamal) Decrypt(sec *SecretKey, c1, c2 curve.Point) []byte {
 	s := eg.Curve.PointScalarMul(c1, sec.X)
-	return eg.Curve.Sub(c2, s).Encode()
+	return eg.Curve.SubPoints(c2, s).Encode()
 }

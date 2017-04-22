@@ -4,9 +4,9 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/twstrike/ed448"
 	. "gopkg.in/check.v1"
 
+	"github.com/twtiger/crypto/curve"
 	"github.com/twtiger/crypto/utils"
 )
 
@@ -72,7 +72,7 @@ var (
 
 	testPub = &PublicKey{
 		// c
-		ed448.NewPoint(
+		curve.Ed448GoldPoint(
 			[16]uint32{
 				0x03ec8f96, 0x0d40670b, 0x0ac03fe7, 0x0956b651,
 				0x0145e610, 0x03c89f01, 0x0a22e379, 0x0b0f5279,
@@ -99,7 +99,7 @@ var (
 			},
 		),
 		// d
-		ed448.NewPoint(
+		curve.Ed448GoldPoint(
 			[16]uint32{
 				0x04cc98b8, 0x0aee5526, 0x0deec7ca, 0x03b955ca,
 				0x0c9aa144, 0x05a7672d, 0x08f5f53b, 0x03a6963f,
@@ -126,7 +126,7 @@ var (
 			},
 		),
 		// h
-		ed448.NewPoint(
+		curve.Ed448GoldPoint(
 			[16]uint32{
 				0x0dc2c86b, 0x062aa269, 0x04784c9d, 0x01750bcf,
 				0x00683731, 0x0b198881, 0x0a36ee98, 0x0c24e6cb,
@@ -156,7 +156,7 @@ var (
 
 	testPriv = &PrivateKey{
 		// x1
-		ed448.NewScalar([]byte{
+		curve.Ed448GoldScalar([]byte{
 			0xc6, 0xd0, 0x98, 0x2e, 0xe4, 0xe5, 0x81, 0xe4,
 			0x61, 0x3c, 0x46, 0x99, 0x0a, 0x37, 0x79, 0xc3,
 			0xfa, 0xe5, 0xd5, 0x29, 0x27, 0x31, 0xa3, 0x55,
@@ -166,7 +166,7 @@ var (
 			0x0c, 0xc7, 0x20, 0x82, 0x3e, 0xd0, 0xdc, 0x2c,
 		}),
 		// x2
-		ed448.NewScalar([]byte{
+		curve.Ed448GoldScalar([]byte{
 			0x7d, 0xbc, 0x55, 0xd7, 0xab, 0x95, 0xd3, 0xca,
 			0xb7, 0x40, 0x1f, 0x64, 0xf4, 0xd3, 0x60, 0x2b,
 			0xa0, 0xec, 0xed, 0x92, 0x90, 0xf7, 0xc4, 0x5c,
@@ -176,7 +176,7 @@ var (
 			0x36, 0xdf, 0xb9, 0x49, 0x7b, 0x54, 0x70, 0x05,
 		}),
 		// y1
-		ed448.NewScalar([]byte{
+		curve.Ed448GoldScalar([]byte{
 			0xa5, 0x08, 0xbe, 0x0a, 0x34, 0x92, 0x1b, 0xfc,
 			0x23, 0x3e, 0xb1, 0x4b, 0x82, 0x75, 0xa1, 0x9b,
 			0x52, 0x85, 0xa6, 0xc5, 0x29, 0x59, 0x4a, 0x5e,
@@ -186,7 +186,7 @@ var (
 			0x6a, 0xb0, 0xfa, 0xdb, 0x95, 0x82, 0x26, 0x2c,
 		}),
 		// y2
-		ed448.NewScalar([]byte{
+		curve.Ed448GoldScalar([]byte{
 			0x8b, 0xa2, 0xa9, 0x1a, 0xf1, 0x0b, 0x04, 0x96,
 			0x92, 0xf9, 0xd5, 0x97, 0x27, 0x96, 0x6c, 0x8f,
 			0x55, 0x6e, 0xf8, 0xdc, 0x85, 0x77, 0xf6, 0x66,
@@ -196,7 +196,7 @@ var (
 			0xfc, 0x78, 0x2c, 0x50, 0xfd, 0x0b, 0xfe, 0x1c,
 		}),
 		// z
-		ed448.NewScalar([]byte{
+		curve.Ed448GoldScalar([]byte{
 			0x5b, 0x39, 0x3a, 0xce, 0x70, 0xc2, 0x97, 0x9c,
 			0x78, 0x00, 0x74, 0xb9, 0x79, 0xac, 0xfb, 0xff,
 			0xa7, 0xb8, 0x5c, 0x64, 0x6b, 0x5a, 0x4d, 0xb3,
@@ -208,20 +208,26 @@ var (
 	}
 )
 
+var cs *CramerShoup
+
+func (s *CSSuite) SetUpTest(c *C) {
+	cs = &CramerShoup{&curve.Ed448Gold{}}
+}
+
 func (s *CSSuite) Test_DerivePrivateKey(c *C) {
-	priv, err := derivePrivKey(utils.FixedRand(csRandData))
+	priv, err := cs.derivePrivKey(utils.FixedRand(csRandData))
 	c.Assert(priv, DeepEquals, testPriv)
 	c.Assert(err, IsNil)
 
 	r := make([]byte, 55)
-	_, err = GenerateKeys(utils.FixedRand(r))
+	_, err = cs.GenerateKeys(utils.FixedRand(r))
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
 
 func (s *CSSuite) Test_KeyGeneration(c *C) {
 
-	keyPair, err := GenerateKeys(utils.FixedRand(csRandData))
+	keyPair, err := cs.GenerateKeys(utils.FixedRand(csRandData))
 	c.Assert(testPub.C, DeepEquals, keyPair.Pub.C)
 	c.Assert(testPub.D, DeepEquals, keyPair.Pub.D)
 	c.Assert(testPub.H, DeepEquals, keyPair.Pub.H)
@@ -233,35 +239,35 @@ func (s *CSSuite) Test_KeyGeneration(c *C) {
 	c.Assert(testPriv.Y2, DeepEquals, keyPair.Priv.Y2)
 	c.Assert(testPriv.Z, DeepEquals, keyPair.Priv.Z)
 
-	keyPair, err = GenerateKeys(utils.FixedRand([]byte{0x00}))
+	keyPair, err = cs.GenerateKeys(utils.FixedRand([]byte{0x00}))
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 	c.Assert(keyPair, IsNil)
 }
 
 func (s *CSSuite) Test_EncryptAndDecrypt(c *C) {
-	keyPair, err := GenerateKeys(rand.Reader)
-	csm, err := Encrypt(message, rand.Reader, keyPair.Pub)
-	expMessage, err := Decrypt(keyPair.Priv, csm)
+	keyPair, err := cs.GenerateKeys(rand.Reader)
+	csm, err := cs.Encrypt(message, rand.Reader, keyPair.Pub)
+	expMessage, err := cs.Decrypt(keyPair.Priv, csm)
 
 	c.Assert(expMessage, DeepEquals, message)
 	c.Assert(err, IsNil)
 
-	keyPair, err = GenerateKeys(rand.Reader)
-	csm, err = Encrypt(message, utils.FixedRand([]byte{0x00}), keyPair.Pub)
+	keyPair, err = cs.GenerateKeys(rand.Reader)
+	csm, err = cs.Encrypt(message, utils.FixedRand([]byte{0x00}), keyPair.Pub)
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 
-	keyPair, err = GenerateKeys(rand.Reader)
-	csm, err = Encrypt(message, rand.Reader, keyPair.Pub)
+	keyPair, err = cs.GenerateKeys(rand.Reader)
+	csm, err = cs.Encrypt(message, rand.Reader, keyPair.Pub)
 	priv := &PrivateKey{
-		ed448.NewScalar(),
-		ed448.NewScalar(),
-		ed448.NewScalar(),
-		ed448.NewScalar(),
-		ed448.NewScalar(),
+		curve.Ed448GoldScalar(nil),
+		curve.Ed448GoldScalar(nil),
+		curve.Ed448GoldScalar(nil),
+		curve.Ed448GoldScalar(nil),
+		curve.Ed448GoldScalar(nil),
 	}
-	expMessage, err = Decrypt(priv, csm)
+	expMessage, err = cs.Decrypt(priv, csm)
 
 	c.Assert(err, ErrorMatches, "cannot decrypt the message")
 }
