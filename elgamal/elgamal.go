@@ -8,7 +8,7 @@ import (
 
 // ElGamal is an instance of the ElGamal Cryptosystem
 type ElGamal struct {
-	curve curve.Curve
+	Curve curve.Curve
 }
 
 // PublicKey represents an ElGamal public key.
@@ -28,7 +28,7 @@ type KeyPair struct {
 }
 
 func (eg *ElGamal) secretKey(rand io.Reader) (*SecretKey, error) {
-	x, err := eg.curve.RandLongTermScalar(rand)
+	x, err := eg.Curve.RandLongTermScalar(rand)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +42,7 @@ func (eg *ElGamal) GenerateKeys(rand io.Reader) (*KeyPair, error) {
 		return nil, err
 	}
 	return &KeyPair{
-		Pub: &PublicKey{eg.curve.PrecompScalarMul(sk.X)},
+		Pub: &PublicKey{eg.Curve.PrecompScalarMul(sk.X)},
 		Sec: sk,
 	}, nil
 }
@@ -50,15 +50,15 @@ func (eg *ElGamal) GenerateKeys(rand io.Reader) (*KeyPair, error) {
 // Encrypt encrypts the given message to the given public key. The result is a
 // pair of integers. Errors can result from reading random.
 func (eg *ElGamal) Encrypt(rand io.Reader, pub *PublicKey, message []byte) (c1, c2 curve.Point, err error) {
-	k, err := eg.curve.RandLongTermScalar(rand)
+	k, err := eg.Curve.RandLongTermScalar(rand)
 	if err != nil {
 		return nil, nil, err
 	}
 	// XXX: check the mod
-	c1 = eg.curve.PrecompScalarMul(k)
+	c1 = eg.Curve.PrecompScalarMul(k)
 	// XXX: expose the s?
-	s := eg.curve.PointScalarMul(pub.Y, k)
-	c2 = eg.curve.Add(s, eg.curve.DecodePoint(message))
+	s := eg.Curve.PointScalarMul(pub.Y, k)
+	c2 = eg.Curve.Add(s, eg.Curve.DecodePoint(message))
 	return
 }
 
@@ -70,6 +70,6 @@ func (eg *ElGamal) Encrypt(rand io.Reader, pub *PublicKey, message []byte) (c1, 
 // Against Protocols Based on the RSA Encryption Standard PKCS #1'', Daniel
 // Bleichenbacher, Advances in Cryptology (Crypto '98).
 func (eg *ElGamal) Decrypt(sec *SecretKey, c1, c2 curve.Point) []byte {
-	s := eg.curve.PointScalarMul(c1, sec.X)
-	return eg.curve.Sub(c2, s).Encode()
+	s := eg.Curve.PointScalarMul(c1, sec.X)
+	return eg.Curve.Sub(c2, s).Encode()
 }
