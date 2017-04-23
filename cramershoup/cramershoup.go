@@ -20,7 +20,7 @@ type Curve interface {
 	curve.PointDoubleScalarMultiplier
 	curve.PointCalculator
 	curve.PointComparer
-	curve.Decoder
+	curve.PointDecoder
 }
 
 // PublicKey represents a Cramer-Shoup public key.

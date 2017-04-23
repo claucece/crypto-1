@@ -61,11 +61,6 @@ func Ed448GoldPoint(a [16]uint32, b [16]uint32, c [16]uint32, d [16]uint32) Poin
 	return wrapPoint(ed448.NewPoint(a, b, c, d))
 }
 
-// Ed448GoldPointFromBytes returns a new Ed448-Goldilocks point from a slice of bytes
-func Ed448GoldPointFromBytes(bs []byte) Point {
-	return wrapPoint(ed448.NewPointFromBytes(bs))
-}
-
 // G returns the Ed448-Goldilocks base point
 func (c *Ed448Gold) G() Point {
 	return wrapPoint(ed448.BasePoint)

@@ -16,7 +16,7 @@ type Curve interface {
 	curve.BasicCurve
 	curve.PrecomputedMultiplier
 	curve.PointCalculator
-	curve.Decoder
+	curve.PointDecoder
 }
 
 // PublicKey represents an ElGamal public key.

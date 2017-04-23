@@ -25,6 +25,7 @@ type Curve interface {
 	curve.PointCalculator
 	curve.PointComparer
 	curve.PointValidator
+	curve.PointDecoder
 	curve.ScalarMultiplier
 	curve.ScalarCalculator
 	curve.ScalarComparer
@@ -181,7 +182,7 @@ func (d *DRE) drEnc(message []byte, rand io.Reader, pub1, pub2 *cs.PublicKey) (*
 	gamma.cipher.u22 = d.Curve.PointScalarMul(d.Curve.G2(), k2)
 
 	// ei = (hi*ki) + m
-	m := curve.Ed448GoldPointFromBytes(message)
+	m := d.Curve.DecodePoint(message)
 	gamma.cipher.e1 = d.Curve.AddPoints(d.Curve.PointScalarMul(pub1.H, k1), m)
 	gamma.cipher.e2 = d.Curve.AddPoints(d.Curve.PointScalarMul(pub2.H, k2), m)
 

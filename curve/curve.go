@@ -17,8 +17,8 @@ type SecondGenerator interface {
 	G2() Point
 }
 
-// Decoder will decode points for the curve
-type Decoder interface {
+// PointDecoder will decode points for the curve
+type PointDecoder interface {
 	DecodePoint([]byte) Point
 }
 
