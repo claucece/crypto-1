@@ -21,6 +21,8 @@ type Curve interface {
 
 // PublicKey represents an ElGamal public key.
 type PublicKey struct {
+	G curve.Point
+	Q curve.Scalar
 	Y curve.Point
 }
 
@@ -50,7 +52,11 @@ func (eg *ElGamal) GenerateKeys(rand io.Reader) (*KeyPair, error) {
 		return nil, err
 	}
 	return &KeyPair{
-		Pub: &PublicKey{eg.Curve.PrecompScalarMul(sk.X)},
+		Pub: &PublicKey{
+			G: eg.Curve.G(),
+			Q: eg.Curve.Q(),
+			Y: eg.Curve.PrecompScalarMul(sk.X),
+		},
 		Sec: sk,
 	}, nil
 }

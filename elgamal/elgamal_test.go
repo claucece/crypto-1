@@ -42,9 +42,12 @@ var (
 		),
 	}
 
+	testCurve = &curve.Ed448Gold{}
+
 	testPub = &PublicKey{
-		// Y
-		curve.Ed448GoldPoint(
+		G: testCurve.G(),
+		Q: testCurve.Q(),
+		Y: curve.Ed448GoldPoint(
 			[16]uint32{
 				0x0ccd1054, 0x0dd85c70, 0x095dc098, 0x005fdf78,
 				0x0f6d2050, 0x064a76af, 0x08363bce, 0x014325f1,
