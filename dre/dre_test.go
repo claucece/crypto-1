@@ -81,8 +81,7 @@ var (
 	}
 
 	testPubA = &cramershoup.PublicKey{
-		// c
-		curve.Ed448GoldPoint(
+		C: curve.Ed448GoldPoint(
 			[16]uint32{
 				0x0600d17a, 0x0a9375b0, 0x057841c1, 0x0d174be0,
 				0x0011badb, 0x006ef801, 0x02e0a39f, 0x0fecd541,
@@ -108,8 +107,7 @@ var (
 				0x0155f3e6, 0x054cf783, 0x0b453295, 0x042c22ff,
 			},
 		),
-		// d
-		curve.Ed448GoldPoint(
+		D: curve.Ed448GoldPoint(
 			[16]uint32{
 				0x03aee5b7, 0x032b3f7f, 0x06176ed0, 0x056fa571,
 				0x04d01a0b, 0x0b382fa3, 0x03d55289, 0x04c8e69c,
@@ -135,8 +133,7 @@ var (
 				0x0981f1fd, 0x0311dbc5, 0x05c12822, 0x033e76b1,
 			},
 		),
-		// h
-		curve.Ed448GoldPoint(
+		H: curve.Ed448GoldPoint(
 			[16]uint32{
 				0x06808e72, 0x0ce35b11, 0x0e5e2f5c, 0x0b88b4d4,
 				0x0869c12a, 0x04414132, 0x0bb898a8, 0x07c1e17c,
@@ -164,9 +161,8 @@ var (
 		),
 	}
 
-	testPrivA = &cramershoup.PrivateKey{
-		// x1
-		curve.Ed448GoldScalar([]byte{
+	testSecA = &cramershoup.SecretKey{
+		X1: curve.Ed448GoldScalar([]byte{
 			0x70, 0x27, 0xc3, 0x28, 0x5d, 0xb9, 0x02, 0x11,
 			0xbd, 0xc2, 0x6b, 0xef, 0xb3, 0xb2, 0xe7, 0x6d,
 			0x6f, 0x2e, 0x20, 0xf6, 0x97, 0xb1, 0xfe, 0xa1,
@@ -175,8 +171,7 @@ var (
 			0xc5, 0x5f, 0xbe, 0xc7, 0xa9, 0x04, 0x13, 0x03,
 			0x3d, 0x6a, 0xda, 0xc6, 0x7c, 0x36, 0x71, 0x06,
 		}),
-		// x2
-		curve.Ed448GoldScalar([]byte{
+		X2: curve.Ed448GoldScalar([]byte{
 			0x94, 0xf0, 0xd5, 0xed, 0x37, 0x78, 0x8a, 0xdb,
 			0x91, 0xdf, 0x1f, 0xb9, 0xab, 0xc4, 0x04, 0x94,
 			0x7c, 0xa4, 0x7d, 0x19, 0x5b, 0x5c, 0xc5, 0x88,
@@ -185,8 +180,7 @@ var (
 			0xf4, 0x0e, 0x8c, 0x65, 0x08, 0x64, 0xb1, 0x91,
 			0x49, 0xd5, 0xfa, 0x15, 0xbd, 0xc4, 0x4f, 0x1b,
 		}),
-		// y1
-		curve.Ed448GoldScalar([]byte{
+		Y1: curve.Ed448GoldScalar([]byte{
 			0xf8, 0xa9, 0x1a, 0xd6, 0x23, 0xb0, 0xbc, 0x94,
 			0x3f, 0x9b, 0x84, 0xd4, 0x6a, 0xbf, 0x9e, 0xb8,
 			0x9e, 0x03, 0x2e, 0xf6, 0xe0, 0xa7, 0x25, 0x1a,
@@ -195,8 +189,7 @@ var (
 			0xc9, 0x86, 0x5e, 0xf7, 0x39, 0x9e, 0x5c, 0x6e,
 			0xfb, 0x46, 0xbc, 0xf8, 0x3d, 0xdc, 0x1b, 0x06,
 		}),
-		// y2
-		curve.Ed448GoldScalar([]byte{
+		Y2: curve.Ed448GoldScalar([]byte{
 			0xe0, 0x1d, 0xd8, 0x77, 0x7b, 0x40, 0x92, 0xae,
 			0xb1, 0x01, 0x2e, 0x5a, 0xcf, 0x54, 0x1f, 0xc2,
 			0x52, 0x89, 0x8d, 0xb4, 0x5c, 0x02, 0xe3, 0x65,
@@ -205,8 +198,7 @@ var (
 			0xc7, 0xb8, 0x46, 0x89, 0xb8, 0xa0, 0xfa, 0x38,
 			0x7e, 0x47, 0xd8, 0xe2, 0x23, 0xda, 0x4d, 0x20,
 		}),
-		// z
-		curve.Ed448GoldScalar([]byte{
+		Z: curve.Ed448GoldScalar([]byte{
 			0xa3, 0xf8, 0xe, 0xb2, 0xa6, 0x99, 0x23, 0x9a,
 			0x81, 0x9b, 0x5e, 0xc3, 0x30, 0xce, 0xd7, 0x49,
 			0x7b, 0xdb, 0x3b, 0xe7, 0x0d, 0xd0, 0x91, 0xec,
@@ -218,8 +210,7 @@ var (
 	}
 
 	testPubB = &cramershoup.PublicKey{
-		// c
-		curve.Ed448GoldPoint(
+		C: curve.Ed448GoldPoint(
 			[16]uint32{
 				0x048603ce, 0x08657fa3, 0x0a7ed7d1, 0x00467214,
 				0x0781aeaf, 0x06202e8e, 0x0142a539, 0x0c55ab78,
@@ -245,8 +236,7 @@ var (
 				0x0c288061, 0x025fd8c5, 0x08dca40d, 0x05c1517d,
 			},
 		),
-		// d
-		curve.Ed448GoldPoint(
+		D: curve.Ed448GoldPoint(
 			[16]uint32{
 				0x0709010b, 0x02d4ba32, 0x08faaaeb, 0x0d4e3745,
 				0x029afa09, 0x069f27d1, 0x0837cb09, 0x0cd2cbd3,
@@ -272,8 +262,7 @@ var (
 				0x0b0112c1, 0x0a848b3b, 0x04e226c1, 0x097bd4a7,
 			},
 		),
-		// h
-		curve.Ed448GoldPoint(
+		H: curve.Ed448GoldPoint(
 			[16]uint32{
 				0x00ed1e98, 0x096ec1e8, 0x0ef9b54e, 0x013e6f69,
 				0x08831655, 0x0a168fe3, 0x07c19a2f, 0x0eef8698,
@@ -301,9 +290,8 @@ var (
 		),
 	}
 
-	testPrivB = &cramershoup.PrivateKey{
-		// x1
-		curve.Ed448GoldScalar([]byte{
+	testSecB = &cramershoup.SecretKey{
+		X1: curve.Ed448GoldScalar([]byte{
 			0xb9, 0x1c, 0xa1, 0xe6, 0x54, 0xb5, 0xdc, 0x03,
 			0x11, 0x0e, 0x6f, 0xa8, 0x52, 0x6b, 0x3d, 0x7c,
 			0x46, 0xbd, 0xd6, 0x1b, 0x52, 0x8b, 0x18, 0xa4,
@@ -313,8 +301,7 @@ var (
 			0xfb, 0x49, 0xc1, 0x74, 0x8f, 0xa5, 0x79, 0x2e,
 		},
 		),
-		// x2
-		curve.Ed448GoldScalar([]byte{
+		X2: curve.Ed448GoldScalar([]byte{
 			0x27, 0x3b, 0x9e, 0x9c, 0x88, 0x5d, 0x7d, 0xca,
 			0x38, 0xba, 0x2e, 0x0c, 0x02, 0xa3, 0xd5, 0x31,
 			0x0f, 0x4c, 0x96, 0x26, 0xb1, 0x85, 0xc6, 0x4d,
@@ -324,8 +311,7 @@ var (
 			0x1c, 0xde, 0x71, 0xe5, 0x5d, 0x25, 0x23, 0x02,
 		},
 		),
-		// y1
-		curve.Ed448GoldScalar([]byte{
+		Y1: curve.Ed448GoldScalar([]byte{
 			0x2b, 0xbb, 0x99, 0x17, 0xa6, 0x86, 0xc6, 0x5b,
 			0x80, 0xc3, 0x15, 0xe2, 0x92, 0x96, 0x99, 0x8b,
 			0x11, 0x9a, 0x1e, 0x0b, 0x2c, 0x7a, 0x48, 0x0e,
@@ -335,8 +321,7 @@ var (
 			0x36, 0xb9, 0x4d, 0xc3, 0x40, 0x3b, 0xf0, 0x1d,
 		},
 		),
-		// y2
-		curve.Ed448GoldScalar([]byte{
+		Y2: curve.Ed448GoldScalar([]byte{
 			0x9c, 0xc7, 0x6d, 0xdf, 0xc5, 0x89, 0xc5, 0x24,
 			0xcb, 0x90, 0x12, 0xe6, 0xab, 0xaa, 0x73, 0x79,
 			0x56, 0x25, 0xf8, 0x6d, 0x13, 0x86, 0xca, 0xdd,
@@ -346,8 +331,7 @@ var (
 			0xfc, 0x22, 0x13, 0x36, 0xb6, 0x15, 0x81, 0x2d,
 		},
 		),
-		// z
-		curve.Ed448GoldScalar([]byte{
+		Z: curve.Ed448GoldScalar([]byte{
 			0x35, 0xb5, 0x48, 0x9c, 0xb2, 0xee, 0xd8, 0xc9,
 			0xe9, 0x5b, 0x62, 0x4b, 0x04, 0x93, 0x44, 0x29,
 			0xb9, 0x17, 0xf2, 0xc6, 0x23, 0xfc, 0x3d, 0xd4,
@@ -386,7 +370,7 @@ var (
 		})
 
 	invalidPub = &cramershoup.PublicKey{
-		curve.Ed448GoldPoint(
+		C: curve.Ed448GoldPoint(
 			[16]uint32{
 				0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
 				0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
@@ -412,7 +396,7 @@ var (
 				0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
 			},
 		),
-		curve.Ed448GoldPoint(
+		D: curve.Ed448GoldPoint(
 			[16]uint32{
 				0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
 				0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
@@ -438,7 +422,7 @@ var (
 				0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
 			},
 		),
-		curve.Ed448GoldPoint(
+		H: curve.Ed448GoldPoint(
 			[16]uint32{
 				0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
 				0xffffffff, 0xffffffff, 0xffffffff, 0xffffffff,
@@ -725,7 +709,7 @@ var crsh *cramershoup.CramerShoup
 
 func (s *DRESuite) SetUpTest(c *C) {
 	d = &DRE{&curve.Ed448Gold{}}
-	crsh = &cramershoup.CramerShoup{&curve.Ed448Gold{}}
+	crsh = &cramershoup.CramerShoup{Curve: &curve.Ed448Gold{}}
 }
 
 func (s *DRESuite) Test_DREnc(c *C) {
@@ -734,25 +718,25 @@ func (s *DRESuite) Test_DREnc(c *C) {
 	c.Assert(m.proof, DeepEquals, testDRMessage.proof)
 	c.Assert(err, IsNil)
 
-	m, err = d.drEnc(testMessage, utils.FixedRand(randDREData), invalidPub, testPubB)
+	_, err = d.drEnc(testMessage, utils.FixedRand(randDREData), invalidPub, testPubB)
 	c.Assert(err, ErrorMatches, ".*not a valid public key")
 
-	m, err = d.drEnc(testMessage, utils.FixedRand([]byte{0x00}), testPubA, testPubB)
+	_, err = d.drEnc(testMessage, utils.FixedRand([]byte{0x00}), testPubA, testPubB)
 	c.Assert(err, ErrorMatches, ".*cannot source enough entropy")
 }
 
 func (s *DRESuite) Test_DRDec(c *C) {
-	m, err := d.drDec(testDRMessage, testPubA, testPubB, testPrivA, 1)
+	m, err := d.drDec(testDRMessage, testPubA, testPubB, testSecA, 1)
 	c.Assert(m, DeepEquals, testMessage)
 	c.Assert(err, IsNil)
 
-	m, err = d.drDec(testDRMessage, invalidPub, testPubB, testPrivA, 1)
+	_, err = d.drDec(testDRMessage, invalidPub, testPubB, testSecA, 1)
 	c.Assert(err, ErrorMatches, ".*not a valid public key")
 
-	m, err = d.drDec(testDRMessage, testPubA, testPubB, testPrivB, 1)
+	_, err = d.drDec(testDRMessage, testPubA, testPubB, testSecB, 1)
 	c.Assert(err, ErrorMatches, ".*cannot decrypt the message")
 
-	m, err = d.drDec(testDRMessage, testPubA, testPubB, testPrivA, 2)
+	_, err = d.drDec(testDRMessage, testPubA, testPubB, testSecA, 2)
 	c.Assert(err, ErrorMatches, ".*cannot decrypt the message")
 }
 
@@ -772,10 +756,10 @@ func (s *DRESuite) Test_DREncryptAndDecrypt(c *C) {
 
 	drMessage, err := d.drEnc(message, rand.Reader, keyPairA.Pub, keyPairB.Pub)
 
-	expMessage1, err := d.drDec(drMessage, keyPairA.Pub, keyPairB.Pub, keyPairA.Priv, 1)
+	expMessage1, err := d.drDec(drMessage, keyPairA.Pub, keyPairB.Pub, keyPairA.Sec, 1)
 	c.Assert(err, IsNil)
 	c.Assert(expMessage1, DeepEquals, message)
-	expMessage2, err := d.drDec(drMessage, keyPairA.Pub, keyPairB.Pub, keyPairB.Priv, 2)
+	expMessage2, err := d.drDec(drMessage, keyPairA.Pub, keyPairB.Pub, keyPairB.Sec, 2)
 	c.Assert(err, IsNil)
 	c.Assert(expMessage2, DeepEquals, message)
 }
@@ -825,7 +809,7 @@ func (s *DRESuite) Test_GenerationOfNIZKPK(c *C) {
 	c.Assert(p, DeepEquals, testDRMessage.proof)
 	c.Assert(err, IsNil)
 
-	p, err = d.genNIZKPK(utils.FixedRand([]byte{0x00}), &testDRMessage.cipher, testPubA, testPubB, alpha1, alpha2, k1, k2)
+	_, err = d.genNIZKPK(utils.FixedRand([]byte{0x00}), &testDRMessage.cipher, testPubA, testPubB, alpha1, alpha2, k1, k2)
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
 
@@ -870,11 +854,11 @@ func (s *DRESuite) Test_VerificationOfDRMessage(c *C) {
 		0x9f, 0x45, 0xbd, 0x44, 0x8a, 0x40, 0x2a, 0x12,
 	})
 
-	valid, err := d.verifyDRMessage(testDRMessage.cipher.u11, testDRMessage.cipher.u21, testDRMessage.cipher.v1, alpha1, testPrivA)
+	valid, err := d.verifyDRMessage(testDRMessage.cipher.u11, testDRMessage.cipher.u21, testDRMessage.cipher.v1, alpha1, testSecA)
 	c.Assert(valid, Equals, true)
 	c.Assert(err, IsNil)
 
-	invalid, err := d.verifyDRMessage(testDRMessage.cipher.u22, testDRMessage.cipher.u21, testDRMessage.cipher.v1, alpha1, testPrivA)
+	invalid, err := d.verifyDRMessage(testDRMessage.cipher.u22, testDRMessage.cipher.u21, testDRMessage.cipher.v1, alpha1, testSecA)
 	c.Assert(invalid, Equals, false)
 	c.Assert(err, ErrorMatches, "cannot decrypt the message")
 }

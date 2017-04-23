@@ -24,10 +24,10 @@ type Curve interface {
 	curve.PointDoubleScalarMultiplier
 	curve.PointCalculator
 	curve.PointComparer
+	curve.PointValidator
 	curve.ScalarMultiplier
 	curve.ScalarCalculator
 	curve.ScalarComparer
-	curve.PointValidator
 }
 
 type drCipher struct {
@@ -71,9 +71,7 @@ func (d *DRE) genNIZKPK(rand io.Reader, m *drCipher, pub1, pub2 *cs.PublicKey, a
 	// T21 = G2 * t1
 	t21 := d.Curve.PointScalarMul(d.Curve.G2(), t1)
 	// T31 = (C1 + D1 * α1) * t1
-	t31 := d.Curve.PointScalarMul(pub1.D, alpha1)
-	t31 = d.Curve.AddPoints(pub1.C, t31)
-	t31 = d.Curve.PointScalarMul(t31, t1)
+	t31 := d.Curve.PointScalarMul(d.Curve.AddPoints(pub1.C, d.Curve.PointScalarMul(pub1.D, alpha1)), t1)
 
 	// T12 = G1 * t2
 	// TODO: why not PrecompScalarMul?
@@ -81,14 +79,11 @@ func (d *DRE) genNIZKPK(rand io.Reader, m *drCipher, pub1, pub2 *cs.PublicKey, a
 	// T22 = G2 * t2
 	t22 := d.Curve.PointScalarMul(d.Curve.G2(), t2)
 	// T32 = (C2 + D2 * α2) * t2
-	t32 := d.Curve.PointScalarMul(pub2.D, alpha2)
-	t32 = d.Curve.AddPoints(pub2.C, t32)
-	t32 = d.Curve.PointScalarMul(t32, t2)
+	t32 := d.Curve.PointScalarMul(d.Curve.AddPoints(pub2.C, d.Curve.PointScalarMul(pub2.D, alpha2)), t2)
 
 	// T4 = H1 * t1 - H2 * t2
 	a := d.Curve.PointScalarMul(pub1.H, t1)
-	t4 := d.Curve.PointScalarMul(pub2.H, t2)
-	t4 = d.Curve.SubPoints(a, t4)
+	t4 := d.Curve.SubPoints(a, d.Curve.PointScalarMul(pub2.H, t2))
 
 	// gV = G1 || G2 || q
 	gV := utils.AppendBytes(d.Curve.G(), d.Curve.G2(), d.Curve.Q())
@@ -103,12 +98,8 @@ func (d *DRE) genNIZKPK(rand io.Reader, m *drCipher, pub1, pub2 *cs.PublicKey, a
 	pf.l = utils.AppendAndHash(gV, pV, eV, zV)
 
 	// ni = ti - l * ki (mod q)
-	pf.n1 = d.Curve.Mul(pf.l, k1)
-	pf.n1 = d.Curve.SubScalars(t1, pf.n1)
-
-	pf.n2 = d.Curve.Mul(pf.l, k2)
-	pf.n2 = d.Curve.SubScalars(t2, pf.n2)
-
+	pf.n1 = d.Curve.SubScalars(t1, d.Curve.Mul(pf.l, k1))
+	pf.n2 = d.Curve.SubScalars(t2, d.Curve.Mul(pf.l, k2))
 	return pf, nil
 }
 
@@ -118,28 +109,22 @@ func (d *DRE) isValid(pf *nIZKProof, m *drCipher, pub1, pub2 *cs.PublicKey, alph
 	// T2j = G2 * nj + U2j * l
 	t21 := d.Curve.PointDoubleScalarMul(d.Curve.G2(), pf.n1, m.u21, pf.l)
 	// T3j = (Cj + Dj * αj) * nj + Vj * l
-	t31 := d.Curve.PointScalarMul(pub1.D, alpha1)
-	t31 = d.Curve.AddPoints(pub1.C, t31)
-	t31 = d.Curve.PointDoubleScalarMul(t31, pf.n1, m.v1, pf.l)
+	t31 := d.Curve.PointDoubleScalarMul(d.Curve.AddPoints(pub1.C, d.Curve.PointScalarMul(pub1.D, alpha1)), pf.n1, m.v1, pf.l)
 
 	// T1j = G1 * nj + U1j * l
 	t12 := d.Curve.PointDoubleScalarMul(d.Curve.G(), pf.n2, m.u12, pf.l)
 	// T2j = G2 * nj + U2j * l
 	t22 := d.Curve.PointDoubleScalarMul(d.Curve.G2(), pf.n2, m.u22, pf.l)
 	// T3j = (Cj + Dj * αj) * nj + Vj * l
-	t32 := d.Curve.PointScalarMul(pub2.D, alpha2)
-	t32 = d.Curve.AddPoints(pub2.C, t32)
-	t32 = d.Curve.PointDoubleScalarMul(t32, pf.n2, m.v2, pf.l)
+	t32 := d.Curve.PointDoubleScalarMul(d.Curve.AddPoints(pub2.C, d.Curve.PointScalarMul(pub2.D, alpha2)), pf.n2, m.v2, pf.l)
 
 	// T4 = H1 * n1 - H2 * n2 + (E1-E2) * l
 	// a = H1 * n1
 	// b = H2 * n2 - a
 	a := d.Curve.PointScalarMul(pub1.H, pf.n1)
-	b := d.Curve.PointScalarMul(pub2.H, pf.n2)
-	b = d.Curve.SubPoints(a, b)
+	b := d.Curve.SubPoints(a, d.Curve.PointScalarMul(pub2.H, pf.n2))
 	c := d.Curve.SubPoints(m.e1, m.e2)
-	t4 := d.Curve.PointScalarMul(c, pf.l)
-	t4 = d.Curve.AddPoints(b, t4)
+	t4 := d.Curve.AddPoints(b, d.Curve.PointScalarMul(c, pf.l))
 
 	// gV = G1 || G2 || q
 	gV := utils.AppendBytes(d.Curve.G(), d.Curve.G2(), d.Curve.Q())
@@ -153,29 +138,24 @@ func (d *DRE) isValid(pf *nIZKProof, m *drCipher, pub1, pub2 *cs.PublicKey, alph
 	// l' = HashToScalar(gV || pV || eV || zV)
 	ll := utils.AppendAndHash(gV, pV, eV, zV)
 
-	valid := d.Curve.EqualScalars(pf.l, ll)
-
-	if !valid {
-		return false, errors.New("cannot decrypt the message")
+	if d.Curve.EqualScalars(pf.l, ll) {
+		return true, nil
 	}
-	return true, nil
+	return false, errors.New("cannot decrypt the message")
 }
 
-func (d *DRE) verifyDRMessage(u1, u2, v curve.Point, alpha curve.Scalar, priv *cs.PrivateKey) (bool, error) {
+func (d *DRE) verifyDRMessage(u1, u2, v curve.Point, alpha curve.Scalar, sec *cs.SecretKey) (bool, error) {
 	// U1i * x1i + U2i * x2i + (U1i * y1i + U2i * y2i) * αi ≟ Vi
 	// a = (u11*x1)+(u21*x2)
-	a := d.Curve.PointDoubleScalarMul(u1, priv.X1, u2, priv.X2)
+	a := d.Curve.PointDoubleScalarMul(u1, sec.X1, u2, sec.X2)
 	// b = (u11*y1)+(u21*y2)
-	b := d.Curve.PointDoubleScalarMul(u1, priv.Y1, u2, priv.Y2)
-	c := d.Curve.PointScalarMul(b, alpha)
-	c = d.Curve.AddPoints(a, c)
-
-	valid := d.Curve.EqualPoints(c, v)
-	if !valid {
+	b := d.Curve.PointDoubleScalarMul(u1, sec.Y1, u2, sec.Y2)
+	c := d.Curve.AddPoints(a, d.Curve.PointScalarMul(b, alpha))
+	if d.Curve.EqualPoints(c, v) {
 		//XXX: is this the correct err?
-		return false, errors.New("cannot decrypt the message")
+		return true, nil
 	}
-	return valid, nil
+	return false, errors.New("cannot decrypt the message")
 }
 
 func (d *DRE) drEnc(message []byte, rand io.Reader, pub1, pub2 *cs.PublicKey) (*drMessage, error) {
@@ -202,10 +182,8 @@ func (d *DRE) drEnc(message []byte, rand io.Reader, pub1, pub2 *cs.PublicKey) (*
 
 	// ei = (hi*ki) + m
 	m := curve.Ed448GoldPointFromBytes(message)
-	gamma.cipher.e1 = d.Curve.PointScalarMul(pub1.H, k1)
-	gamma.cipher.e1 = d.Curve.AddPoints(gamma.cipher.e1, m)
-	gamma.cipher.e2 = d.Curve.PointScalarMul(pub2.H, k2)
-	gamma.cipher.e2 = d.Curve.AddPoints(gamma.cipher.e2, m)
+	gamma.cipher.e1 = d.Curve.AddPoints(d.Curve.PointScalarMul(pub1.H, k1), m)
+	gamma.cipher.e2 = d.Curve.AddPoints(d.Curve.PointScalarMul(pub2.H, k2), m)
 
 	// αi = H(u1i,u2i,ei)
 	alpha1 := utils.AppendAndHash(gamma.cipher.u11, gamma.cipher.u21, gamma.cipher.e1)
@@ -216,12 +194,10 @@ func (d *DRE) drEnc(message []byte, rand io.Reader, pub1, pub2 *cs.PublicKey) (*
 	// vi = ai + bi
 	a1 := d.Curve.PointScalarMul(pub1.C, k1)
 	b1 := d.Curve.PointScalarMul(pub1.D, k1)
-	gamma.cipher.v1 = d.Curve.PointScalarMul(b1, alpha1)
-	gamma.cipher.v1 = d.Curve.AddPoints(a1, gamma.cipher.v1)
+	gamma.cipher.v1 = d.Curve.AddPoints(a1, d.Curve.PointScalarMul(b1, alpha1))
 	a2 := d.Curve.PointScalarMul(pub2.C, k2)
 	b2 := d.Curve.PointScalarMul(pub2.D, k2)
-	gamma.cipher.v2 = d.Curve.PointScalarMul(b2, alpha2)
-	gamma.cipher.v2 = d.Curve.AddPoints(a2, gamma.cipher.v2)
+	gamma.cipher.v2 = d.Curve.AddPoints(a2, d.Curve.PointScalarMul(b2, alpha2))
 
 	proof, err := d.genNIZKPK(rand, &gamma.cipher, pub1, pub2, alpha1, alpha2, k1, k2)
 	if err != nil {
@@ -232,7 +208,7 @@ func (d *DRE) drEnc(message []byte, rand io.Reader, pub1, pub2 *cs.PublicKey) (*
 	return gamma, nil
 }
 
-func (d *DRE) drDec(gamma *drMessage, pub1, pub2 *cs.PublicKey, priv *cs.PrivateKey, index int) (message []byte, err error) {
+func (d *DRE) drDec(gamma *drMessage, pub1, pub2 *cs.PublicKey, sec *cs.SecretKey, index int) (message []byte, err error) {
 	err = d.isValidPublicKey(pub1, pub2)
 	if err != nil {
 		return nil, err
@@ -249,21 +225,19 @@ func (d *DRE) drDec(gamma *drMessage, pub1, pub2 *cs.PublicKey, priv *cs.Private
 
 	var m curve.Point
 	if index == 1 {
-		valid, err = d.verifyDRMessage(gamma.cipher.u11, gamma.cipher.u21, gamma.cipher.v1, alpha1, priv)
+		valid, err = d.verifyDRMessage(gamma.cipher.u11, gamma.cipher.u21, gamma.cipher.v1, alpha1, sec)
 		if !valid {
 			return nil, err
 		}
 		// m = e - u11*z
-		m = d.Curve.PointScalarMul(gamma.cipher.u11, priv.Z)
-		m = d.Curve.SubPoints(gamma.cipher.e1, m)
+		m = d.Curve.SubPoints(gamma.cipher.e1, d.Curve.PointScalarMul(gamma.cipher.u11, sec.Z))
 	} else {
-		valid, err = d.verifyDRMessage(gamma.cipher.u12, gamma.cipher.u22, gamma.cipher.v2, alpha2, priv)
+		valid, err = d.verifyDRMessage(gamma.cipher.u12, gamma.cipher.u22, gamma.cipher.v2, alpha2, sec)
 		if !valid {
 			return nil, err
 		}
 		// m = e - u12*z
-		m = d.Curve.PointScalarMul(gamma.cipher.u12, priv.Z)
-		m = d.Curve.SubPoints(gamma.cipher.e2, m)
+		m = d.Curve.SubPoints(gamma.cipher.e2, d.Curve.PointScalarMul(gamma.cipher.u12, sec.Z))
 	}
 
 	message = m.Encode()

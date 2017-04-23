@@ -154,7 +154,7 @@ var (
 		),
 	}
 
-	testPriv = &PrivateKey{
+	testSec = &SecretKey{
 		// x1
 		curve.Ed448GoldScalar([]byte{
 			0xc6, 0xd0, 0x98, 0x2e, 0xe4, 0xe5, 0x81, 0xe4,
@@ -214,9 +214,10 @@ func (s *CSSuite) SetUpTest(c *C) {
 	cs = &CramerShoup{&curve.Ed448Gold{}}
 }
 
-func (s *CSSuite) Test_DerivePrivateKey(c *C) {
-	priv, err := cs.derivePrivKey(utils.FixedRand(csRandData))
-	c.Assert(priv, DeepEquals, testPriv)
+func (s *CSSuite) Test_DeriveSecretKey(c *C) {
+	sec, err := cs.deriveSecretKey(utils.FixedRand(csRandData))
+
+	c.Assert(sec, DeepEquals, testSec)
 	c.Assert(err, IsNil)
 
 	r := make([]byte, 55)
@@ -226,18 +227,17 @@ func (s *CSSuite) Test_DerivePrivateKey(c *C) {
 }
 
 func (s *CSSuite) Test_KeyGeneration(c *C) {
-
 	keyPair, err := cs.GenerateKeys(utils.FixedRand(csRandData))
+
 	c.Assert(testPub.C, DeepEquals, keyPair.Pub.C)
 	c.Assert(testPub.D, DeepEquals, keyPair.Pub.D)
 	c.Assert(testPub.H, DeepEquals, keyPair.Pub.H)
 	c.Assert(err, IsNil)
-
-	c.Assert(testPriv.X1, DeepEquals, keyPair.Priv.X1)
-	c.Assert(testPriv.X2, DeepEquals, keyPair.Priv.X2)
-	c.Assert(testPriv.Y1, DeepEquals, keyPair.Priv.Y1)
-	c.Assert(testPriv.Y2, DeepEquals, keyPair.Priv.Y2)
-	c.Assert(testPriv.Z, DeepEquals, keyPair.Priv.Z)
+	c.Assert(testSec.X1, DeepEquals, keyPair.Sec.X1)
+	c.Assert(testSec.X2, DeepEquals, keyPair.Sec.X2)
+	c.Assert(testSec.Y1, DeepEquals, keyPair.Sec.Y1)
+	c.Assert(testSec.Y2, DeepEquals, keyPair.Sec.Y2)
+	c.Assert(testSec.Z, DeepEquals, keyPair.Sec.Z)
 
 	keyPair, err = cs.GenerateKeys(utils.FixedRand([]byte{0x00}))
 
@@ -248,7 +248,7 @@ func (s *CSSuite) Test_KeyGeneration(c *C) {
 func (s *CSSuite) Test_EncryptAndDecrypt(c *C) {
 	keyPair, err := cs.GenerateKeys(rand.Reader)
 	csm, err := cs.Encrypt(message, rand.Reader, keyPair.Pub)
-	expMessage, err := cs.Decrypt(keyPair.Priv, csm)
+	expMessage, err := cs.Decrypt(keyPair.Sec, csm)
 
 	c.Assert(expMessage, DeepEquals, message)
 	c.Assert(err, IsNil)
@@ -260,14 +260,14 @@ func (s *CSSuite) Test_EncryptAndDecrypt(c *C) {
 
 	keyPair, err = cs.GenerateKeys(rand.Reader)
 	csm, err = cs.Encrypt(message, rand.Reader, keyPair.Pub)
-	priv := &PrivateKey{
+	sec := &SecretKey{
 		utils.MustCreateRandScalar(),
 		utils.MustCreateRandScalar(),
 		utils.MustCreateRandScalar(),
 		utils.MustCreateRandScalar(),
 		utils.MustCreateRandScalar(),
 	}
-	expMessage, err = cs.Decrypt(priv, csm)
+	_, err = cs.Decrypt(sec, csm)
 
 	c.Assert(err, ErrorMatches, "cannot decrypt the message")
 }

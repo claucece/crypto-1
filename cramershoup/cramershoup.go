@@ -28,15 +28,15 @@ type PublicKey struct {
 	C, D, H curve.Point
 }
 
-// PrivateKey represents a Cramer-Shoup private key.
-type PrivateKey struct {
+// SecretKey represents a Cramer-Shoup private key.
+type SecretKey struct {
 	X1, X2, Y1, Y2, Z curve.Scalar
 }
 
 // KeyPair represents a Cramer-Shoup key pair.
 type KeyPair struct {
-	Pub  *PublicKey
-	Priv *PrivateKey
+	Pub *PublicKey
+	Sec *SecretKey
 }
 
 // CSMessage represents a Cramer-Shoup message.
@@ -44,94 +44,91 @@ type CSMessage struct {
 	U1, U2, E, V curve.Point
 }
 
-func (cs *CramerShoup) derivePrivKey(rand io.Reader) (*PrivateKey, error) {
-	priv := &PrivateKey{}
+func (cs *CramerShoup) deriveSecretKey(rand io.Reader) (*SecretKey, error) {
+	sec := &SecretKey{}
 	var err1, err2, err3, err4, err5 error
 
-	priv.X1, err1 = cs.Curve.RandLongTermScalar(rand)
-	priv.X2, err2 = cs.Curve.RandLongTermScalar(rand)
-	priv.Y1, err3 = cs.Curve.RandLongTermScalar(rand)
-	priv.Y2, err4 = cs.Curve.RandLongTermScalar(rand)
-	priv.Z, err5 = cs.Curve.RandLongTermScalar(rand)
+	sec.X1, err1 = cs.Curve.RandLongTermScalar(rand)
+	sec.X2, err2 = cs.Curve.RandLongTermScalar(rand)
+	sec.Y1, err3 = cs.Curve.RandLongTermScalar(rand)
+	sec.Y2, err4 = cs.Curve.RandLongTermScalar(rand)
+	sec.Z, err5 = cs.Curve.RandLongTermScalar(rand)
 
-	return priv, utils.FirstError(err1, err2, err3, err4, err5)
+	return sec, utils.FirstError(err1, err2, err3, err4, err5)
 }
 
 // GenerateKeys generates a key pair of Cramer-Shoup keys.
 func (cs *CramerShoup) GenerateKeys(rand io.Reader) (*KeyPair, error) {
-	var err error
-	keyPair := &KeyPair{}
-
-	keyPair.Priv, err = cs.derivePrivKey(rand)
+	sec, err := cs.deriveSecretKey(rand)
 	if err != nil {
 		return nil, err
 	}
-
-	keyPair.Pub = &PublicKey{}
-	keyPair.Pub.C = cs.Curve.PointDoubleScalarMul(cs.Curve.G(), keyPair.Priv.X1, cs.Curve.G2(), keyPair.Priv.X2)
-	keyPair.Pub.D = cs.Curve.PointDoubleScalarMul(cs.Curve.G(), keyPair.Priv.Y1, cs.Curve.G2(), keyPair.Priv.Y2)
-	keyPair.Pub.H = cs.Curve.PointScalarMul(cs.Curve.G(), keyPair.Priv.Z)
-
-	return keyPair, nil
+	return &KeyPair{
+		Sec: sec,
+		Pub: &PublicKey{
+			C: cs.Curve.PointDoubleScalarMul(cs.Curve.G(), sec.X1, cs.Curve.G2(), sec.X2),
+			D: cs.Curve.PointDoubleScalarMul(cs.Curve.G(), sec.Y1, cs.Curve.G2(), sec.Y2),
+			H: cs.Curve.PointScalarMul(cs.Curve.G(), sec.Z),
+		},
+	}, nil
 }
 
 // Encrypt encrypts the given message to the given public key. The result is a
 // four points. Errors can result from reading random.
 func (cs *CramerShoup) Encrypt(message []byte, rand io.Reader, pub *PublicKey) (*CSMessage, error) {
-	csm := &CSMessage{}
-
 	// XXX: why not use RandLongTermScalar?
 	r, err := utils.RandScalar(rand)
 	if err != nil {
 		return nil, err
 	}
 
-	// u = G1*r, u2 = G2*r
-	csm.U1 = cs.Curve.PointScalarMul(cs.Curve.G(), r)
-	csm.U2 = cs.Curve.PointScalarMul(cs.Curve.G2(), r)
+	// u1 = G1*r, u2 = G2*r
+	u1 := cs.Curve.PointScalarMul(cs.Curve.G(), r)
+	u2 := cs.Curve.PointScalarMul(cs.Curve.G2(), r)
 
 	// e = (h*r) + m
-	csm.E = cs.Curve.AddPoints(cs.Curve.PointScalarMul(pub.H, r), cs.Curve.DecodePoint(message))
-
-	// α = H(u1,u2,e)
-	alpha := utils.AppendAndHash(csm.U1, csm.U2, csm.E)
+	e := cs.Curve.AddPoints(cs.Curve.PointScalarMul(pub.H, r), cs.Curve.DecodePoint(message))
 
 	// a = c * r
+	// alpha = H(u1,u2,e)
 	// b = d*(r * alpha)
-	// v = s + t
+	// v = a + b
 	a := cs.Curve.PointScalarMul(pub.C, r)
+	alpha := utils.AppendAndHash(u1, u2, e)
 	b := cs.Curve.PointScalarMul(cs.Curve.PointScalarMul(pub.D, r), alpha)
-	csm.V = cs.Curve.AddPoints(a, b)
+	v := cs.Curve.AddPoints(a, b)
 
-	return csm, nil
+	return &CSMessage{
+		U1: u1,
+		U2: u2,
+		E:  e,
+		V:  v,
+	}, nil
 }
 
 // Decrypt takes four points, resulting from an Cramer-Shoup encryption, and
 // returns the plaintext of the message. An error can result only if the
 // ciphertext is invalid.
 // XXX: check if message is zero
-func (cs *CramerShoup) Decrypt(priv *PrivateKey, csm *CSMessage) (message []byte, err error) {
+func (cs *CramerShoup) Decrypt(sec *SecretKey, csm *CSMessage) ([]byte, error) {
+	// a = (u1*x1)+(u2*x2)
+	a := cs.Curve.PointDoubleScalarMul(csm.U1, sec.X1, csm.U2, sec.X2)
+
+	// b = (u1*y1)+(u2*y2)
+	b := cs.Curve.PointDoubleScalarMul(csm.U1, sec.Y1, csm.U2, sec.Y2)
+
 	// alpha = H(u1,u2,e)
 	alpha := utils.AppendAndHash(csm.U1, csm.U2, csm.E)
 
-	// (u1*(x1+y1*alpha) +u2*(x2+ y2*alpha) == v
-	// a = (u1*x1)+(u2*x2)
-	a := cs.Curve.PointDoubleScalarMul(csm.U1, priv.X1, csm.U2, priv.X2)
+	// v = u1*(x1+y1*alpha) + u2*(x2+ y2*alpha)
+	v := cs.Curve.AddPoints(a, cs.Curve.PointScalarMul(b, alpha))
 
-	// b = (u1*y1)+(u2*y2)
-	b := cs.Curve.PointDoubleScalarMul(csm.U1, priv.Y1, csm.U2, priv.Y2)
-	v0 := cs.Curve.PointScalarMul(b, alpha)
-	v0 = cs.Curve.AddPoints(a, v0)
-
-	ok := cs.Curve.EqualPoints(v0, csm.V)
-	if !ok {
+	// v == csm.v
+	if !cs.Curve.EqualPoints(v, csm.V) {
 		return nil, errors.New("cannot decrypt the message")
 	}
 
 	// m = e - u1*z
-	m := cs.Curve.PointScalarMul(csm.U1, priv.Z)
-	m = cs.Curve.SubPoints(csm.E, m)
-	message = m.Encode()
-
-	return
+	m := cs.Curve.SubPoints(csm.E, cs.Curve.PointScalarMul(csm.U1, sec.Z))
+	return m.Encode(), nil
 }
