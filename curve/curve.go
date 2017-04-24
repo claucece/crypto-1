@@ -9,6 +9,12 @@ type BasicCurve interface {
 	// Q returns the prime order of the curve. This is exposed to allow easy access for protocols which use Q directly.
 	Q() Scalar
 	PointScalarMul(Point, Scalar) Point
+	// RandScalar will create a scalar with bytes retrieved from the supplied reader.
+	// This function does not hash the bytes like RandLongTermScalar
+	// TODO: Why have two different types of random scalar creation?
+	RandScalar(io.Reader) (Scalar, error)
+	// RandLongTermScalar will create a scalar with the bytes retrieved from the supplied reader.
+	// This function will hash the bytes before returning the scalar
 	RandLongTermScalar(io.Reader) (Scalar, error)
 }
 

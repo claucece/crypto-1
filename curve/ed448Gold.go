@@ -125,7 +125,7 @@ func (c *Ed448Gold) SubPoints(p1 Point, p2 Point) Point {
 	return wrapPoint(p)
 }
 
-// RandLongTermScalar derives a scalar from the bytes retrieved from a reader
+// RandLongTermScalar derives a scalar from hashing the bytes retrieved from a reader
 func (c *Ed448Gold) RandLongTermScalar(r io.Reader) (Scalar, error) {
 	var b [scalarSize]byte
 	_, err := io.ReadFull(r, b[:])
@@ -140,6 +140,16 @@ func (c *Ed448Gold) RandLongTermScalar(r io.Reader) (Scalar, error) {
 	var out [scalarSize]byte
 	hash.Read(out[:])
 	return wrapScalar(ed448.NewScalar(out[:])), nil
+}
+
+// RandScalar derives a random scalar without hashing the bytes retrieved from the reader
+func (c *Ed448Gold) RandScalar(r io.Reader) (Scalar, error) {
+	var b [scalarSize]byte
+	_, err := io.ReadFull(r, b[:])
+	if err != nil {
+		return nil, errors.New("cannot source enough entropy")
+	}
+	return Ed448GoldScalar(b[:]), nil
 }
 
 // DecodePoint implements Point decoding for Ed448-Goldilocks
@@ -182,4 +192,11 @@ func (c *Ed448Gold) SubScalars(s1 Scalar, s2 Scalar) Scalar {
 // EqualScalars compares two scalar values for equality
 func (c *Ed448Gold) EqualScalars(s1 Scalar, s2 Scalar) bool {
 	return unwrapScalar(s1).Equals(unwrapScalar(s2))
+}
+
+// HashToScalar will append and hash bytes, points, and scalars into a scalar
+func (c *Ed448Gold) HashToScalar(items ...interface{}) Scalar {
+	hash := make([]byte, 56)
+	sha3.ShakeSum256(hash, Append(items...))
+	return Ed448GoldScalar(hash)
 }

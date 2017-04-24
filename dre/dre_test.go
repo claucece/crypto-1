@@ -6,7 +6,7 @@ import (
 
 	"github.com/twtiger/crypto/cramershoup"
 	"github.com/twtiger/crypto/curve"
-	"github.com/twtiger/crypto/utils"
+	"github.com/twtiger/crypto/testHelpers"
 
 	. "gopkg.in/check.v1"
 )
@@ -713,15 +713,15 @@ func (s *DRESuite) SetUpTest(c *C) {
 }
 
 func (s *DRESuite) Test_DREnc(c *C) {
-	m, err := d.drEnc(testMessage, utils.FixedRand(randDREData), testPubA, testPubB)
+	m, err := d.drEnc(testMessage, testHelpers.FixedRandReader(randDREData), testPubA, testPubB)
 	c.Assert(m.cipher, DeepEquals, testDRMessage.cipher)
 	c.Assert(m.proof, DeepEquals, testDRMessage.proof)
 	c.Assert(err, IsNil)
 
-	_, err = d.drEnc(testMessage, utils.FixedRand(randDREData), invalidPub, testPubB)
+	_, err = d.drEnc(testMessage, testHelpers.FixedRandReader(randDREData), invalidPub, testPubB)
 	c.Assert(err, ErrorMatches, ".*not a valid public key")
 
-	_, err = d.drEnc(testMessage, utils.FixedRand([]byte{0x00}), testPubA, testPubB)
+	_, err = d.drEnc(testMessage, testHelpers.FixedRandReader([]byte{0x00}), testPubA, testPubB)
 	c.Assert(err, ErrorMatches, ".*cannot source enough entropy")
 }
 
@@ -805,11 +805,11 @@ func (s *DRESuite) Test_GenerationOfNIZKPK(c *C) {
 		0xc0, 0xdf, 0x80, 0x3d, 0x7a, 0x2f, 0x1f, 0x6,
 	})
 
-	p, err := d.genNIZKPK(utils.FixedRand(randNIZKPKData), &testDRMessage.cipher, testPubA, testPubB, alpha1, alpha2, k1, k2)
+	p, err := d.genNIZKPK(testHelpers.FixedRandReader(randNIZKPKData), &testDRMessage.cipher, testPubA, testPubB, alpha1, alpha2, k1, k2)
 	c.Assert(p, DeepEquals, testDRMessage.proof)
 	c.Assert(err, IsNil)
 
-	_, err = d.genNIZKPK(utils.FixedRand([]byte{0x00}), &testDRMessage.cipher, testPubA, testPubB, alpha1, alpha2, k1, k2)
+	_, err = d.genNIZKPK(testHelpers.FixedRandReader([]byte{0x00}), &testDRMessage.cipher, testPubA, testPubB, alpha1, alpha2, k1, k2)
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
 

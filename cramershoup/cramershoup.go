@@ -5,7 +5,6 @@ import (
 	"io"
 
 	"github.com/twtiger/crypto/curve"
-	"github.com/twtiger/crypto/utils"
 )
 
 // CramerShoup instantiates a Cramer-Shoup system with a specific elliptic curve
@@ -21,6 +20,7 @@ type Curve interface {
 	curve.PointCalculator
 	curve.PointComparer
 	curve.PointDecoder
+	curve.Hasher
 }
 
 // PublicKey represents a Cramer-Shoup public key.
@@ -54,7 +54,16 @@ func (cs *CramerShoup) deriveSecretKey(rand io.Reader) (*SecretKey, error) {
 	sec.Y2, err4 = cs.Curve.RandLongTermScalar(rand)
 	sec.Z, err5 = cs.Curve.RandLongTermScalar(rand)
 
-	return sec, utils.FirstError(err1, err2, err3, err4, err5)
+	return sec, firstError(err1, err2, err3, err4, err5)
+}
+
+func firstError(errs ...error) error {
+	for _, err := range errs {
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // GenerateKeys generates a key pair of Cramer-Shoup keys.
@@ -77,7 +86,7 @@ func (cs *CramerShoup) GenerateKeys(rand io.Reader) (*KeyPair, error) {
 // four points. Errors can result from reading random.
 func (cs *CramerShoup) Encrypt(message []byte, rand io.Reader, pub *PublicKey) (*CSMessage, error) {
 	// XXX: why not use RandLongTermScalar?
-	r, err := utils.RandScalar(rand)
+	r, err := cs.Curve.RandScalar(rand)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +103,7 @@ func (cs *CramerShoup) Encrypt(message []byte, rand io.Reader, pub *PublicKey) (
 	// b = d*(r * alpha)
 	// v = a + b
 	a := cs.Curve.PointScalarMul(pub.C, r)
-	alpha := utils.AppendAndHash(u1, u2, e)
+	alpha := cs.Curve.HashToScalar(u1, u2, e)
 	b := cs.Curve.PointScalarMul(cs.Curve.PointScalarMul(pub.D, r), alpha)
 	v := cs.Curve.AddPoints(a, b)
 
@@ -118,7 +127,7 @@ func (cs *CramerShoup) Decrypt(sec *SecretKey, csm *CSMessage) ([]byte, error) {
 	b := cs.Curve.PointDoubleScalarMul(csm.U1, sec.Y1, csm.U2, sec.Y2)
 
 	// alpha = H(u1,u2,e)
-	alpha := utils.AppendAndHash(csm.U1, csm.U2, csm.E)
+	alpha := cs.Curve.HashToScalar(csm.U1, csm.U2, csm.E)
 
 	// v = u1*(x1+y1*alpha) + u2*(x2+ y2*alpha)
 	v := cs.Curve.AddPoints(a, cs.Curve.PointScalarMul(b, alpha))

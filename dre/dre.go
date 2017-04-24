@@ -6,7 +6,6 @@ import (
 
 	cs "github.com/twtiger/crypto/cramershoup"
 	"github.com/twtiger/crypto/curve"
-	"github.com/twtiger/crypto/utils"
 )
 
 // TODO: it seems none of the functions and types in this package are exposed, so no-one could actually use them
@@ -29,6 +28,7 @@ type Curve interface {
 	curve.ScalarMultiplier
 	curve.ScalarCalculator
 	curve.ScalarComparer
+	curve.Hasher
 }
 
 type drCipher struct {
@@ -56,12 +56,12 @@ func (d *DRE) isValidPublicKey(pubs ...*cs.PublicKey) error {
 
 func (d *DRE) genNIZKPK(rand io.Reader, m *drCipher, pub1, pub2 *cs.PublicKey, alpha1, alpha2, k1, k2 curve.Scalar) (*nIZKProof, error) {
 	// TODO: why not RandLongTermScalar?
-	t1, err := utils.RandScalar(rand)
+	t1, err := d.Curve.RandScalar(rand)
 	if err != nil {
 		return nil, err
 	}
 	// TODO: why not RandLongTermScalar?
-	t2, err := utils.RandScalar(rand)
+	t2, err := d.Curve.RandScalar(rand)
 	if err != nil {
 		return nil, err
 	}
@@ -87,16 +87,16 @@ func (d *DRE) genNIZKPK(rand io.Reader, m *drCipher, pub1, pub2 *cs.PublicKey, a
 	t4 := d.Curve.SubPoints(a, d.Curve.PointScalarMul(pub2.H, t2))
 
 	// gV = G1 || G2 || q
-	gV := utils.AppendBytes(d.Curve.G(), d.Curve.G2(), d.Curve.Q())
+	gV := curve.Append(d.Curve.G(), d.Curve.G2(), d.Curve.Q())
 	// pV = C1 || D1 || H1 || C2 || D2 || H2
-	pV := utils.AppendBytes(pub1.C, pub1.D, pub1.H, pub2.C, pub2.D, pub2.H)
+	pV := curve.Append(pub1.C, pub1.D, pub1.H, pub2.C, pub2.D, pub2.H)
 	// eV = U11 || U21 || E1 || V1 || α1 || U12 || U22 || E2 || V2 || α2
-	eV := utils.AppendBytes(m.u11, m.u21, m.e1, m.v1, alpha1, m.u12, m.u22, m.e2, m.v2, alpha2)
+	eV := curve.Append(m.u11, m.u21, m.e1, m.v1, alpha1, m.u12, m.u22, m.e2, m.v2, alpha2)
 	// zV = T11 || T21 || T31 || T12 || T22 || T32 || T4
-	zV := utils.AppendBytes(t11, t21, t31, t12, t22, t32, t4)
+	zV := curve.Append(t11, t21, t31, t12, t22, t32, t4)
 
 	pf := &nIZKProof{}
-	pf.l = utils.AppendAndHash(gV, pV, eV, zV)
+	pf.l = d.Curve.HashToScalar(gV, pV, eV, zV)
 
 	// ni = ti - l * ki (mod q)
 	pf.n1 = d.Curve.SubScalars(t1, d.Curve.Mul(pf.l, k1))
@@ -128,16 +128,16 @@ func (d *DRE) isValid(pf *nIZKProof, m *drCipher, pub1, pub2 *cs.PublicKey, alph
 	t4 := d.Curve.AddPoints(b, d.Curve.PointScalarMul(c, pf.l))
 
 	// gV = G1 || G2 || q
-	gV := utils.AppendBytes(d.Curve.G(), d.Curve.G2(), d.Curve.Q())
+	gV := curve.Append(d.Curve.G(), d.Curve.G2(), d.Curve.Q())
 	// pV = C1 || D1 || H1 || C2 || D2 || H2
-	pV := utils.AppendBytes(pub1.C, pub1.D, pub1.H, pub2.C, pub2.D, pub2.H)
+	pV := curve.Append(pub1.C, pub1.D, pub1.H, pub2.C, pub2.D, pub2.H)
 	// eV = U11 || U21 || E1 || V1 || α1 || U12 || U22 || E2 || V2 || α2
-	eV := utils.AppendBytes(m.u11, m.u21, m.e1, m.v1, alpha1, m.u12, m.u22, m.e2, m.v2, alpha2)
+	eV := curve.Append(m.u11, m.u21, m.e1, m.v1, alpha1, m.u12, m.u22, m.e2, m.v2, alpha2)
 	// zV = T11 || T21 || T31 || T12 || T22 || T32 || T4
-	zV := utils.AppendBytes(t11, t21, t31, t12, t22, t32, t4)
+	zV := curve.Append(t11, t21, t31, t12, t22, t32, t4)
 
 	// l' = HashToScalar(gV || pV || eV || zV)
-	ll := utils.AppendAndHash(gV, pV, eV, zV)
+	ll := d.Curve.HashToScalar(gV, pV, eV, zV)
 
 	if d.Curve.EqualScalars(pf.l, ll) {
 		return true, nil
@@ -165,11 +165,11 @@ func (d *DRE) drEnc(message []byte, rand io.Reader, pub1, pub2 *cs.PublicKey) (*
 		return nil, err
 	}
 
-	k1, err := utils.RandScalar(rand)
+	k1, err := d.Curve.RandScalar(rand)
 	if err != nil {
 		return nil, err
 	}
-	k2, err := utils.RandScalar(rand)
+	k2, err := d.Curve.RandScalar(rand)
 	if err != nil {
 		return nil, err
 	}
@@ -187,8 +187,8 @@ func (d *DRE) drEnc(message []byte, rand io.Reader, pub1, pub2 *cs.PublicKey) (*
 	gamma.cipher.e2 = d.Curve.AddPoints(d.Curve.PointScalarMul(pub2.H, k2), m)
 
 	// αi = H(u1i,u2i,ei)
-	alpha1 := utils.AppendAndHash(gamma.cipher.u11, gamma.cipher.u21, gamma.cipher.e1)
-	alpha2 := utils.AppendAndHash(gamma.cipher.u12, gamma.cipher.u22, gamma.cipher.e2)
+	alpha1 := d.Curve.HashToScalar(gamma.cipher.u11, gamma.cipher.u21, gamma.cipher.e1)
+	alpha2 := d.Curve.HashToScalar(gamma.cipher.u12, gamma.cipher.u22, gamma.cipher.e2)
 
 	// ai = ci * ki
 	// bi = di*(ki * αi)
@@ -216,8 +216,8 @@ func (d *DRE) drDec(gamma *drMessage, pub1, pub2 *cs.PublicKey, sec *cs.SecretKe
 	}
 
 	// αj = HashToScalar(U1j || U2j || Ej)
-	alpha1 := utils.AppendAndHash(gamma.cipher.u11, gamma.cipher.u21, gamma.cipher.e1)
-	alpha2 := utils.AppendAndHash(gamma.cipher.u12, gamma.cipher.u22, gamma.cipher.e2)
+	alpha1 := d.Curve.HashToScalar(gamma.cipher.u11, gamma.cipher.u21, gamma.cipher.e1)
+	alpha2 := d.Curve.HashToScalar(gamma.cipher.u12, gamma.cipher.u22, gamma.cipher.e2)
 
 	valid, err := d.isValid(gamma.proof, &gamma.cipher, pub1, pub2, alpha1, alpha2)
 	if !valid {

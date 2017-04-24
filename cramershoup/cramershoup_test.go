@@ -2,12 +2,13 @@ package cramershoup
 
 import (
 	"crypto/rand"
+	"errors"
 	"testing"
 
 	. "gopkg.in/check.v1"
 
 	"github.com/twtiger/crypto/curve"
-	"github.com/twtiger/crypto/utils"
+	"github.com/twtiger/crypto/testHelpers"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -215,19 +216,19 @@ func (s *CSSuite) SetUpTest(c *C) {
 }
 
 func (s *CSSuite) Test_DeriveSecretKey(c *C) {
-	sec, err := cs.deriveSecretKey(utils.FixedRand(csRandData))
+	sec, err := cs.deriveSecretKey(testHelpers.FixedRandReader(csRandData))
 
 	c.Assert(sec, DeepEquals, testSec)
 	c.Assert(err, IsNil)
 
 	r := make([]byte, 55)
-	_, err = cs.GenerateKeys(utils.FixedRand(r))
+	_, err = cs.GenerateKeys(testHelpers.FixedRandReader(r))
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
 
 func (s *CSSuite) Test_KeyGeneration(c *C) {
-	keyPair, err := cs.GenerateKeys(utils.FixedRand(csRandData))
+	keyPair, err := cs.GenerateKeys(testHelpers.FixedRandReader(csRandData))
 
 	c.Assert(testPub.C, DeepEquals, keyPair.Pub.C)
 	c.Assert(testPub.D, DeepEquals, keyPair.Pub.D)
@@ -239,7 +240,7 @@ func (s *CSSuite) Test_KeyGeneration(c *C) {
 	c.Assert(testSec.Y2, DeepEquals, keyPair.Sec.Y2)
 	c.Assert(testSec.Z, DeepEquals, keyPair.Sec.Z)
 
-	keyPair, err = cs.GenerateKeys(utils.FixedRand([]byte{0x00}))
+	keyPair, err = cs.GenerateKeys(testHelpers.FixedRandReader([]byte{0x00}))
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 	c.Assert(keyPair, IsNil)
@@ -254,20 +255,29 @@ func (s *CSSuite) Test_EncryptAndDecrypt(c *C) {
 	c.Assert(err, IsNil)
 
 	keyPair, err = cs.GenerateKeys(rand.Reader)
-	csm, err = cs.Encrypt(message, utils.FixedRand([]byte{0x00}), keyPair.Pub)
+	csm, err = cs.Encrypt(message, testHelpers.FixedRandReader([]byte{0x00}), keyPair.Pub)
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 
 	keyPair, err = cs.GenerateKeys(rand.Reader)
 	csm, err = cs.Encrypt(message, rand.Reader, keyPair.Pub)
 	sec := &SecretKey{
-		utils.MustCreateRandScalar(),
-		utils.MustCreateRandScalar(),
-		utils.MustCreateRandScalar(),
-		utils.MustCreateRandScalar(),
-		utils.MustCreateRandScalar(),
+		testHelpers.MustCreateRandScalar(),
+		testHelpers.MustCreateRandScalar(),
+		testHelpers.MustCreateRandScalar(),
+		testHelpers.MustCreateRandScalar(),
+		testHelpers.MustCreateRandScalar(),
 	}
 	_, err = cs.Decrypt(sec, csm)
 
 	c.Assert(err, ErrorMatches, "cannot decrypt the message")
+}
+
+func (s *CSSuite) Test_ReturnFirstError(c *C) {
+	err1 := errors.New("new error 1")
+	err2 := errors.New("new error 2")
+
+	err := firstError(err1, err2)
+
+	c.Assert(err, ErrorMatches, "new error 1")
 }

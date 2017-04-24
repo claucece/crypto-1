@@ -7,7 +7,7 @@ import (
 	. "gopkg.in/check.v1"
 
 	"github.com/twtiger/crypto/curve"
-	"github.com/twtiger/crypto/utils"
+	"github.com/twtiger/crypto/testHelpers"
 )
 
 func Test(t *testing.T) { TestingT(t) }
@@ -83,26 +83,26 @@ func (s *EGSuite) SetUpTest(c *C) {
 }
 
 func (s *EGSuite) Test_DeriveSecretKey(c *C) {
-	priv, err := eg.secretKey(utils.FixedRand(egRandData))
+	priv, err := eg.secretKey(testHelpers.FixedRandReader(egRandData))
 
 	c.Assert(priv, DeepEquals, testSec)
 	c.Assert(err, IsNil)
 
 	r := make([]byte, 55)
-	_, err = eg.secretKey(utils.FixedRand(r))
+	_, err = eg.secretKey(testHelpers.FixedRandReader(r))
 
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
 
 func (s *EGSuite) Test_GenerateKeys(c *C) {
-	pair, err := eg.GenerateKeys(utils.FixedRand(egRandData))
+	pair, err := eg.GenerateKeys(testHelpers.FixedRandReader(egRandData))
 
 	c.Assert(pair.Pub, DeepEquals, testPub)
 	c.Assert(pair.Sec, DeepEquals, testSec)
 	c.Assert(err, IsNil)
 
 	r := make([]byte, 55)
-	_, err = eg.GenerateKeys(utils.FixedRand(r))
+	_, err = eg.GenerateKeys(testHelpers.FixedRandReader(r))
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")
 }
 
@@ -124,7 +124,7 @@ func (s *EGSuite) Test_EncryptionAndDecryption(c *C) {
 	c.Assert(err, IsNil)
 
 	keyPair, err = eg.GenerateKeys(rand.Reader)
-	c1, c2, err = eg.Encrypt(utils.FixedRand([]byte{0x00}), keyPair.Pub, message)
+	c1, c2, err = eg.Encrypt(testHelpers.FixedRandReader([]byte{0x00}), keyPair.Pub, message)
 
 	c.Assert(expMessage, DeepEquals, message)
 	c.Assert(err, ErrorMatches, "cannot source enough entropy")

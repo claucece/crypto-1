@@ -1,11 +1,18 @@
-package utils
+package testHelpers
 
 import (
-	"github.com/twstrike/ed448"
+	"testing"
+
 	"github.com/twtiger/crypto/curve"
 
 	. "gopkg.in/check.v1"
 )
+
+func Test(t *testing.T) { TestingT(t) }
+
+type RandomSuite struct{}
+
+var _ = Suite(&RandomSuite{})
 
 var (
 	randData = []byte{
@@ -52,8 +59,14 @@ var (
 	}
 )
 
-func (s *UtilsSuite) Test_RandomScalar(c *C) {
-	scalar, err := RandScalar(FixedRand(randData))
+var eg *curve.Ed448Gold
+
+func (s *RandomSuite) SetUpTest(c *C) {
+	eg = &curve.Ed448Gold{}
+}
+
+func (s *RandomSuite) Test_RandomScalar(c *C) {
+	scalar, err := eg.RandScalar(FixedRandReader(randData))
 
 	exp := curve.Ed448GoldScalar(
 		[]byte{
@@ -71,10 +84,10 @@ func (s *UtilsSuite) Test_RandomScalar(c *C) {
 	c.Assert(scalar, DeepEquals, exp)
 }
 
-func (s *UtilsSuite) Test_RandomLongTermScalar(c *C) {
-	scalar, err := RandLongTermScalar(FixedRand(randData))
+func (s *RandomSuite) Test_RandomLongTermScalar(c *C) {
+	scalar, err := eg.RandLongTermScalar(FixedRandReader(randData))
 
-	exp := ed448.NewScalar(
+	exp := curve.Ed448GoldScalar(
 		[]byte{
 			0xc6, 0xd0, 0x98, 0x2e, 0xe4, 0xe5, 0x81, 0xe4,
 			0x61, 0x3c, 0x46, 0x99, 0x0a, 0x37, 0x79, 0xc3,
